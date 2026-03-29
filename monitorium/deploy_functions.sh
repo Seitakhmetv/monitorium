@@ -10,8 +10,8 @@ LOG_FILE="deploy_functions.log"
 deploy_function() {
     local NAME=$1
     local ENTRY=$2
-
-    echo "── Deploying $NAME (entry: $ENTRY)..."
+    local TIMEOUT=${3:-60s}
+    local MEMORY=${4:-256MB}
 
     gcloud functions deploy $NAME \
         --gen2 \
@@ -20,15 +20,17 @@ deploy_function() {
         --source=. \
         --entry-point=$ENTRY \
         --trigger-http \
+        --timeout=$TIMEOUT \
+        --memory=$MEMORY \
         --set-env-vars $ENV_VARS \
         --service-account=$SA \
         --project=$PROJECT || {
             echo "ERROR: Failed to deploy $NAME"
-            echo "$(date '+%Y-%m-%d %H:%M:%S') | FAILED | $NAME | entry=$ENTRY" >> $LOG_FILE
+            echo "$(date '+%Y-%m-%d %H:%M:%S') | FAILED | $NAME" >> $LOG_FILE
             exit 1
         }
 
-    echo "$(date '+%Y-%m-%d %H:%M:%S') | SUCCESS | $NAME | entry=$ENTRY" >> $LOG_FILE
+    echo "$(date '+%Y-%m-%d %H:%M:%S') | SUCCESS | $NAME" >> $LOG_FILE
     echo "✓ $NAME deployed"
 }
 
@@ -43,6 +45,8 @@ echo ""
 deploy_function scraper-yfinance scraper_yfinance_run
 deploy_function scraper-worldbank scraper_worldbank_run
 deploy_function scraper-news scraper_news_run
+deploy_function run-silver run_silver 3600s
+deploy_function run-gold run_gold 3600s
 
 echo ""
 echo "✓ All functions deployed."

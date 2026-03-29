@@ -46,17 +46,16 @@ create_cluster() {
     gsutil cp requirements.txt $BUCKET/requirements.txt
     gsutil cp scripts/init_cluster.sh $BUCKET/scripts/init_cluster.sh
 
-    echo "── Creating Dataproc cluster: $CLUSTER..."
+    echo "── Creating Dataproc cluster: $CLUSTER (single-node, auto-delete)..."
     gcloud dataproc clusters create $CLUSTER \
         --region=$REGION \
         --zone=${REGION}-a \
-        --master-machine-type=n1-standard-2 \
-        --worker-machine-type=n1-standard-2 \
-        --num-workers=2 \
+        --single-node \
+        --master-machine-type=n1-standard-1 \
+        --master-boot-disk-size=30GB \
         --image-version=2.1-debian11 \
-        --optional-components=JUPYTER \
-        --enable-component-gateway \
         --initialization-actions=$BUCKET/scripts/init_cluster.sh \
+        --max-idle=10m \
         --project=$PROJECT
 
     echo "── Cluster created."
@@ -101,6 +100,12 @@ check_existing_wheel() {
 upload_artifacts() {
     local WHEEL_PATH=$1
     local WHEEL_NAME=$(basename $WHEEL_PATH)
+
+        # upload versioned wheel
+    gsutil cp $WHEEL_PATH $BUCKET/$WHEEL_NAME
+
+    # also upload as 'latest' so DAG always finds it
+    gsutil cp $WHEEL_PATH $BUCKET/monitorium-latest-py3-none-any.whl
 
     echo "── Uploading wheel: $WHEEL_NAME..."
     gsutil cp $WHEEL_PATH $BUCKET/$WHEEL_NAME
