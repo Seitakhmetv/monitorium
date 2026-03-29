@@ -1,4 +1,5 @@
 beautifulsoup4==4.14.3
+build==1.4.2
 certifi==2026.2.25
 cffi==2.0.0
 charset-normalizer==3.4.6
@@ -28,12 +29,13 @@ platformdirs==4.9.4
 pluggy==1.6.0
 proto-plus==1.27.2
 protobuf==6.33.6
-py4j==0.10.9.9
+py4j==0.10.9.7
 pyasn1==0.6.3
 pyasn1_modules==0.4.2
 pycparser==3.0
 Pygments==2.19.2
-pyspark==4.1.1
+pyproject_hooks==1.2.0
+pyspark==3.5.3
 pytest==9.0.2
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2

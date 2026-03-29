@@ -5,7 +5,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import DateType, FloatType, LongType
 from dotenv import load_dotenv
-from monitorium.utils import build_spark, read_bronze, validate, write_silver
+from ingestion.utils import build_spark, read_bronze, validate, write_silver
 
 load_dotenv()
 

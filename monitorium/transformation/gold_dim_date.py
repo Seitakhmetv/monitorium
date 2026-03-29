@@ -1,6 +1,6 @@
 from pyspark.sql import functions as F
 from pyspark.sql.types import IntegerType
-from monitorium.utils import build_spark, write_gold
+from ingestion.utils import build_spark, write_gold
 import os
 from dotenv import load_dotenv
 

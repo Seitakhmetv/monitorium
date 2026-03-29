@@ -6,7 +6,7 @@ import hashlib
 from datetime import date
 from google.cloud import storage
 from dotenv import load_dotenv
-from monitorium.utils import upload_to_gcs
+from ingestion.utils import upload_to_gcs
 import time
 
 load_dotenv()

@@ -5,7 +5,7 @@ import json
 import os
 from datetime import date
 from dotenv import load_dotenv
-from monitorium.utils import upload_to_gcs 
+from ingestion.utils import upload_to_gcs 
 
 load_dotenv()
 

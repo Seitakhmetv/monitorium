@@ -111,8 +111,12 @@ upload_artifacts() {
     echo "── Uploading requirements.txt..."
     gsutil cp requirements.txt $BUCKET/requirements.txt
 
-    echo "── Uploading .env..."
-    gsutil cp .env $BUCKET/.env
+    echo "── Creating Dataproc .env and uploading..."
+    sed 's/ENV=local/ENV=dataproc/' .env > .env.dataproc
+    gsutil cp .env.dataproc $BUCKET/.env
+    rm .env.dataproc
+
+    echo "── Done uploading."
 }
 
 submit_job() {

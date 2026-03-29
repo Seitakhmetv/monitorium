@@ -18,20 +18,24 @@ def upload_to_gcs(data: list, bucket_name: str, blob_path: str) -> None:
 
 def build_spark(app_name: str) -> SparkSession:
     env = os.getenv("ENV", "local")
-    
-    builder = SparkSession.builder.appName(app_name) \
-        .config("spark.hadoop.google.cloud.auth.service.account.enable", "true")
-    
-    if env == "local":
-        builder = builder \
-            .config("spark.jars.packages",
-                    "com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.36.1") \
-            .config("spark.hadoop.google.cloud.auth.service.account.json.keyfile",
-                    os.getenv("GOOGLE_APPLICATION_CREDENTIALS"))
-    
-    # on Dataproc — auth and BQ connector are pre-configured, nothing extra needed
-    
-    return builder.getOrCreate()
+
+    if env == "dataproc":
+        return SparkSession.builder \
+            .appName(app_name) \
+            .getOrCreate()
+
+    return SparkSession.builder \
+        .appName(app_name) \
+        .config("spark.jars.packages",
+                "com.google.cloud.bigdataoss:gcs-connector:hadoop3-2.2.26") \
+        .config("spark.hadoop.fs.gs.impl",
+                "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem") \
+        .config("spark.hadoop.fs.AbstractFileSystem.gs.impl",
+                "com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS") \
+        .config("spark.hadoop.google.cloud.auth.service.account.enable", "true") \
+        .config("spark.hadoop.google.cloud.auth.service.account.json.keyfile",
+                os.getenv("GOOGLE_APPLICATION_CREDENTIALS")) \
+        .getOrCreate()
 
 def read_bronze(spark: SparkSession, run_date: str, bucket_name: str, blob_path: str):
     """
@@ -54,18 +58,12 @@ def write_silver(df, bucket_name: str, blob_path: str, run_date: str,) -> None:
     df.write.mode("overwrite").parquet(f"gs://{bucket_name}/{blob_path}/run_date={run_date}/")
 
 def write_gold(df, project_id: str, dataset: str, table: str, mode: str = "overwrite") -> None:
-    """
-    Write DataFrame to BigQuery.
-    mode: "overwrite" = WRITE_TRUNCATE (replace table)
-          "append"    = WRITE_APPEND (add rows)
-    Overwrite is idempotent — safe to re-run.
-    """
-    # your code here
     df.write \
         .format("bigquery") \
         .option("table", f"{project_id}.{dataset}.{table}") \
         .option("temporaryGcsBucket", os.getenv("GCS_SILVER_BUCKET")) \
         .option("writeDisposition", "WRITE_TRUNCATE" if mode == "overwrite" else "WRITE_APPEND") \
+        .mode("overwrite" if mode == "overwrite" else "append") \
         .save()
 
 def validate(df, primary_keys: list) -> None:

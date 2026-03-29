@@ -3,7 +3,7 @@ import yfinance as yf
 import os
 from datetime import date, timedelta
 import pandas as pd
-from monitorium.utils import upload_to_gcs
+from ingestion.utils import upload_to_gcs
 
 load_dotenv()
 
