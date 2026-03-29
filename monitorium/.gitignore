@@ -8,3 +8,4 @@ monitorium-sa.json
 dist/
 build/
 monitorium.egg-info/
+*.log

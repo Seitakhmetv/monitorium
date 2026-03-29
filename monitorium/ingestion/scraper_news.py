@@ -12,7 +12,7 @@ import time
 load_dotenv()
 
 BRONZE_BUCKET = os.getenv("GCS_BRONZE_BUCKET")
-RUN_DATE = str(date.today())
+RUN_DATE = os.getenv("RUN_DATE", date.today().isoformat())
 
 headers = {
     "User-Agent": "Mozilla/5.0"

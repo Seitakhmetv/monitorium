@@ -18,3 +18,12 @@
 2026-03-29 19:41:49 | FAILED | version=14c38e7 | script=transformation/gold_dim_country.py | wheel=monitorium-14c38e7-py3-none-any.whl
 2026-03-29 19:43:56 | FAILED | version=14c38e7 | script=transformation/gold_dim_country.py | wheel=monitorium-14c38e7-py3-none-any.whl
 2026-03-29 19:47:51 | SUCCESS | version=14c38e7 | script=transformation/gold_dim_country.py | wheel=monitorium-14c38e7-py3-none-any.whl
+2026-03-29 19:56:04 | FAILED | version=cf5b94c | script=transformation/gold_fact_prices.py | wheel=monitorium-cf5b94c-py3-none-any.whl
+2026-03-29 20:00:37 | FAILED | version=cf5b94c | script=transformation/gold_fact_prices.py | wheel=monitorium-cf5b94c-py3-none-any.whl
+2026-03-29 20:12:58 | SUCCESS | version=cf5b94c | script=transformation/gold_fact_prices.py | wheel=monitorium-cf5b94c-py3-none-any.whl
+2026-03-29 20:17:45 | SUCCESS | version=cf5b94c | script=transformation/gold_fact_macro.py | wheel=monitorium-cf5b94c-py3-none-any.whl
+2026-03-29 20:19:41 | FAILED | version=cf5b94c | script=transformation/silver_news.py | wheel=monitorium-cf5b94c-py3-none-any.whl
+2026-03-29 20:22:11 | FAILED | version=cf5b94c | script=transformation/silver_news.py | wheel=monitorium-cf5b94c-py3-none-any.whl
+2026-03-29 20:28:45 | FAILED | version=cf5b94c | script=transformation/silver_news.py | wheel=monitorium-cf5b94c-py3-none-any.whl
+2026-03-29 20:34:27 | SUCCESS | version=cf5b94c | script=transformation/silver_news.py | wheel=monitorium-cf5b94c-py3-none-any.whl
+2026-03-29 20:38:41 | SUCCESS | version=cf5b94c | script=transformation/gold_news.py | wheel=monitorium-cf5b94c-py3-none-any.whl

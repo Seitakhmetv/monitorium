@@ -9,7 +9,7 @@ load_dotenv()
 
 TICKERS = []
 BRONZE_BUCKET = os.getenv("GCS_BRONZE_BUCKET")
-RUN_DATE = str(date.today())
+RUN_DATE = os.getenv("RUN_DATE", date.today().isoformat())
 
 
 def fetch_prices(tickers: list, start: str, end: str) -> list:

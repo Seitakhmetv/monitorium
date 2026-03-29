@@ -1,4 +1,4 @@
-from utils import build_spark, write_gold
+from ingestion.utils import build_spark, write_gold
 import os
 from dotenv import load_dotenv
 
