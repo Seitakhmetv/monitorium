@@ -34,42 +34,6 @@ log() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') | $STATUS | version=$VERSION | script=$SCRIPT | wheel=$WHEEL" >> $LOG_FILE
 }
 
-cluster_exists() {
-    gcloud dataproc clusters describe $CLUSTER \
-        --region=$REGION \
-        --project=$PROJECT \
-        &>/dev/null
-}
-
-create_cluster() {
-    echo "── Uploading requirements.txt and init script..."
-    gsutil cp requirements.txt $BUCKET/requirements.txt
-    gsutil cp scripts/init_cluster.sh $BUCKET/scripts/init_cluster.sh
-
-    echo "── Creating Dataproc cluster: $CLUSTER (single-node, auto-delete)..."
-    gcloud dataproc clusters create $CLUSTER \
-        --region=$REGION \
-        --zone=${REGION}-a \
-        --single-node \
-        --master-machine-type=n1-standard-1 \
-        --master-boot-disk-size=30GB \
-        --image-version=2.1-debian11 \
-        --initialization-actions=$BUCKET/scripts/init_cluster.sh \
-        --max-idle=10m \
-        --project=$PROJECT
-
-    echo "── Cluster created."
-}
-
-ensure_cluster() {
-    if cluster_exists; then
-        echo "── Cluster '$CLUSTER' already exists. Skipping creation."
-    else
-        echo "── Cluster '$CLUSTER' not found."
-        create_cluster
-    fi
-}
-
 build_wheel() {
     local VERSION=$1
     echo "── Building wheel (version: $VERSION)..."

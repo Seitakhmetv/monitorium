@@ -1,3 +1,4 @@
+#to save costs running through scheduler but implemented DAG below
 from airflow import DAG
 from airflow.providers.google.cloud.operators.dataproc import DataprocSubmitPySparkJobOperator
 from airflow.providers.http.operators.http import SimpleHttpOperator

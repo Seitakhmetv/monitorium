@@ -2,10 +2,10 @@
 
 import functions_framework
 from ingestion.scraper_yfinance import fetch_prices, fetch_metadata
-from ingestion.scraper_worldbank import fetch_all, INDICATORS, COUNTRIES
+from ingestion.scraper_worldbank import fetch_all, INDICATORS, COUNTRIES, flatten_for_df
 from ingestion.scraper_news import fetch_news, deduplicate
 from ingestion.utils import upload_to_gcs
-from datetime import date
+from datetime import date, timedelta
 import os
 
 
@@ -16,55 +16,51 @@ def submit_dataproc_job(script: str, run_date: str) -> int:
 
     project = "monitorium-491507"
     region = "us-central1"
-    cluster = "monitorium-cluster"
     bucket = "gs://monitorium-scripts"
     wheel = f"{bucket}/monitorium-latest-py3-none-any.whl"
 
-    job_client = dataproc_v1.JobControllerClient(
+    batch_client = dataproc_v1.BatchControllerClient(
         client_options={"api_endpoint": f"{region}-dataproc.googleapis.com:443"}
     )
 
-    job = {
-        "placement": {"cluster_name": cluster},
-        "pyspark_job": {
+    batch = {
+        "pyspark_batch": {
             "main_python_file_uri": f"{bucket}/{script}",
             "python_file_uris": [wheel],
             "file_uris": [f"{bucket}/.env"],
+            "args": [],
+        },
+        "environment_config": {
+            "execution_config": {
+                "service_account": "monitorium-sa@monitorium-491507.iam.gserviceaccount.com"
+            }
+        },
+        "runtime_config": {
             "properties": {
                 "spark.executorEnv.RUN_DATE": run_date
             }
         }
     }
 
-    submitted_job = job_client.submit_job(
-        request={"project_id": project, "region": region, "job": job}
+    operation = batch_client.create_batch(
+        parent=f"projects/{project}/locations/{region}",
+        batch=batch
     )
 
-    # poll until done
-    import time
-    job_id = submitted_job.reference.job_id
-    while True:
-        job_status = job_client.get_job(
-            request={"project_id": project, "region": region, "job_id": job_id}
-        )
-        state = job_status.status.state
-        if state == dataproc_v1.JobStatus.State.DONE:
-            return 0
-        if state in (
-            dataproc_v1.JobStatus.State.ERROR,
-            dataproc_v1.JobStatus.State.CANCELLED,
-        ):
-            print(f"Job {job_id} failed with state: {state}")
-            return 1
-        print(f"Job {job_id} state: {state} — waiting...")
-        time.sleep(15)
+    result = operation.result()  # waits for completion
+    print(f"Batch job finished: {result.state}")
+
+    if result.state == dataproc_v1.Batch.State.SUCCEEDED:
+        return 0
+    return 1
 
 
 # ── scrapers ──────────────────────────────────────────────────────────────────
 
 @functions_framework.http
 def scraper_yfinance_run(request):
-    run_date = str(date.today())
+    run_date = str(date.today() - timedelta(days=1))
+
     tickers = ["AAPL", "MSFT", "JPM"]
 
     prices = fetch_prices(tickers, start=run_date, end=run_date)
@@ -92,7 +88,7 @@ def scraper_worldbank_run(request):
 
 @functions_framework.http
 def scraper_news_run(request):
-    run_date = str(date.today())
+    run_date = str(date.today() - timedelta(days=1))  # match scraper
     tickers = ["AAPL", "MSFT", "JPM"]
 
     all_articles = []
@@ -110,7 +106,7 @@ def scraper_news_run(request):
 
 @functions_framework.http
 def run_silver(request):
-    run_date = str(date.today())
+    run_date = str(date.today() - timedelta(days=1))  # match scraper
 
     for script in [
         "transformation/silver_prices.py",
@@ -129,7 +125,7 @@ def run_silver(request):
 
 @functions_framework.http
 def run_gold(request):
-    run_date = str(date.today())
+    run_date = str(date.today() - timedelta(days=1))  # match scraper
 
     for script in [
         "transformation/gold_dim_company.py",
