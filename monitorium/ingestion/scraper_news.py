@@ -7,6 +7,7 @@ from datetime import date
 from google.cloud import storage
 from dotenv import load_dotenv
 from ingestion.utils import upload_to_gcs
+from ingestion.config import TICKERS
 import time
 
 load_dotenv()
@@ -84,9 +85,8 @@ def deduplicate(articles: list) -> list:
 
 
 if __name__ == "__main__":
-    from ingestion.scraper_yfinance import TICKERS
-
-    tickers = TICKERS or ["AAPL", "MSFT", "JPM"]
+    
+    tickers = TICKERS
 
     all_articles = []
 

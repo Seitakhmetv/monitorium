@@ -6,6 +6,7 @@ from ingestion.scraper_worldbank import fetch_all, INDICATORS, COUNTRIES, flatte
 from ingestion.scraper_news import fetch_news, deduplicate
 from ingestion.utils import upload_to_gcs
 from datetime import date, timedelta
+from ingestion.config import TICKERS
 import os
 
 
@@ -37,7 +38,8 @@ def submit_dataproc_job(script: str, run_date: str) -> int:
         },
         "runtime_config": {
             "properties": {
-                "spark.executorEnv.RUN_DATE": run_date
+                "spark.executorEnv.RUN_DATE": run_date,
+                "spark.driverEnv.RUN_DATE": run_date 
             }
         }
     }
@@ -59,9 +61,9 @@ def submit_dataproc_job(script: str, run_date: str) -> int:
 
 @functions_framework.http
 def scraper_yfinance_run(request):
-    run_date = str(date.today() - timedelta(days=1))
+    run_date = str(date.today())
 
-    tickers = ["AAPL", "MSFT", "JPM"]
+    tickers = TICKERS
 
     prices = fetch_prices(tickers, start=run_date, end=run_date)
     metadata = fetch_metadata(tickers)
@@ -88,8 +90,8 @@ def scraper_worldbank_run(request):
 
 @functions_framework.http
 def scraper_news_run(request):
-    run_date = str(date.today() - timedelta(days=1))  # match scraper
-    tickers = ["AAPL", "MSFT", "JPM"]
+    run_date = str(date.today())
+    tickers = TICKERS
 
     all_articles = []
     for ticker in tickers:
@@ -106,7 +108,7 @@ def scraper_news_run(request):
 
 @functions_framework.http
 def run_silver(request):
-    run_date = str(date.today() - timedelta(days=1))  # match scraper
+    run_date = str(date.today())
 
     for script in [
         "transformation/silver_prices.py",
@@ -125,7 +127,7 @@ def run_silver(request):
 
 @functions_framework.http
 def run_gold(request):
-    run_date = str(date.today() - timedelta(days=1))  # match scraper
+    run_date = str(date.today())
 
     for script in [
         "transformation/gold_dim_company.py",
@@ -141,3 +143,63 @@ def run_gold(request):
         print(f"✓ {script}")
 
     return "Gold complete", 200
+
+
+#-------------- backfilling -----------------------------
+@functions_framework.http
+def backfill(request):
+    from ingestion.scraper_yfinance import fetch_prices
+    from ingestion.scraper_worldbank import fetch_all, flatten_for_df, INDICATORS, COUNTRIES
+    from datetime import datetime
+
+    tickers = TICKERS
+    START_YEAR = 2000
+    END_YEAR = date.today().year
+    log = []
+
+    # ── prices (year by year) ─────────────────────────────────────────────────
+    for year in range(START_YEAR, END_YEAR + 1):
+        chunk_start = f"{year}-01-01"
+        chunk_end = f"{year}-12-31"
+
+        print(f"Fetching prices {chunk_start} → {chunk_end}...")
+        prices = fetch_prices(tickers, start=chunk_start, end=chunk_end)
+
+        if prices:
+            upload_to_gcs(
+                prices,
+                os.getenv("GCS_BRONZE_BUCKET"),
+                f"raw/prices/backfill/{year}.json"
+            )
+            log.append(f"✓ prices {year}: {len(prices)} rows")
+            print(log[-1])
+        else:
+            log.append(f"⚠ prices {year}: no data")
+            print(log[-1])
+
+    # ── worldbank (all years in one call) ─────────────────────────────────────
+    print("Fetching World Bank historical data...")
+    all_data = fetch_all(COUNTRIES, INDICATORS)
+    flat = flatten_for_df(all_data)
+
+    upload_to_gcs(
+        flat,
+        os.getenv("GCS_BRONZE_BUCKET"),
+        "raw/worldbank/backfill/all.json"
+    )
+    log.append(f"✓ worldbank: {len(flat)} records")
+
+    return "\n".join(log), 200
+
+@functions_framework.http
+def run_silver_backfill(request):
+    for script in [
+        "transformation/silver_prices_backfill.py",
+        "transformation/silver_worldbank_backfill.py",
+    ]:
+        print(f"Submitting {script}...")
+        result = submit_dataproc_job(script, str(date.today()))
+        if result != 0:
+            return f"FAILED: {script}", 500
+        print(f"✓ {script}")
+    return "Silver backfill complete", 200

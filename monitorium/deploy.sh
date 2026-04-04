@@ -2,7 +2,6 @@
 set -e
 
 # ── config ────────────────────────────────────────────────────────────────────
-CLUSTER=monitorium-cluster
 REGION=us-central1
 PROJECT=monitorium-491507
 BUCKET=gs://monitorium-scripts
@@ -12,7 +11,7 @@ SCRIPT=$1
 # ── validation ────────────────────────────────────────────────────────────────
 if [ -z "$SCRIPT" ]; then
     echo "ERROR: No script provided."
-    echo "Usage: bash deploy.sh transformation/gold_dim_date.py"
+    echo "Usage: bash deploy.sh transformation/silver_prices.py"
     exit 1
 fi
 
@@ -39,7 +38,7 @@ build_wheel() {
     echo "── Building wheel (version: $VERSION)..."
 
     sed -i.bak "s/version=\".*\"/version=\"$VERSION\"/" setup.py
-    python -m build --wheel --no-isolation
+    python3 -m build --wheel --no-isolation
     mv setup.py.bak setup.py
 
     WHEEL_PATH=$(ls dist/monitorium-*.whl | tail -1)
@@ -65,14 +64,11 @@ upload_artifacts() {
     local WHEEL_PATH=$1
     local WHEEL_NAME=$(basename $WHEEL_PATH)
 
-        # upload versioned wheel
-    gsutil cp $WHEEL_PATH $BUCKET/$WHEEL_NAME
-
-    # also upload as 'latest' so DAG always finds it
-    gsutil cp $WHEEL_PATH $BUCKET/monitorium-latest-py3-none-any.whl
-
     echo "── Uploading wheel: $WHEEL_NAME..."
     gsutil cp $WHEEL_PATH $BUCKET/$WHEEL_NAME
+
+    echo "── Uploading as latest..."
+    gsutil cp $WHEEL_PATH $BUCKET/monitorium-latest-py3-none-any.whl
 
     echo "── Uploading script: $SCRIPT..."
     gsutil cp $SCRIPT $BUCKET/$SCRIPT
@@ -81,30 +77,11 @@ upload_artifacts() {
     gsutil cp requirements.txt $BUCKET/requirements.txt
 
     echo "── Creating Dataproc .env and uploading..."
-    sed 's/ENV=local/ENV=dataproc/' .env > .env.dataproc
+    sed 's/ENV=local/ENV=dataproc/' .env | grep -v '^RUN_DATE' > .env.dataproc
     gsutil cp .env.dataproc $BUCKET/.env
     rm .env.dataproc
 
     echo "── Done uploading."
-}
-
-submit_job() {
-    local WHEEL_NAME=$1
-
-    echo ""
-    echo "── Submitting job to Dataproc..."
-    echo "   Script  : $SCRIPT"
-    echo "   Wheel   : $WHEEL_NAME"
-    echo "   Cluster : $CLUSTER"
-    echo ""
-
-    gcloud dataproc jobs submit pyspark \
-        $BUCKET/$SCRIPT \
-        --cluster=$CLUSTER \
-        --region=$REGION \
-        --py-files=$BUCKET/$WHEEL_NAME \
-        --files=$BUCKET/.env \
-        --project=$PROJECT
 }
 
 # ── main ──────────────────────────────────────────────────────────────────────
@@ -120,8 +97,6 @@ main() {
 
     WHEEL_NAME="monitorium-${VERSION}-py3-none-any.whl"
 
-    ensure_cluster
-
     check_existing_wheel $WHEEL_NAME
 
     build_wheel $VERSION || {
@@ -129,17 +104,12 @@ main() {
         log "FAILED" $VERSION $SCRIPT $WHEEL_NAME
         exit 1
     }
+    
+    WHEEL_PATH=$(ls dist/monitorium-*.whl | tail -1)
+    WHEEL_NAME=$(basename $WHEEL_PATH)
 
     upload_artifacts dist/$WHEEL_NAME || {
         echo "ERROR: Upload failed. Old wheel may still be on GCS — do not submit manually."
-        log "FAILED" $VERSION $SCRIPT $WHEEL_NAME
-        exit 1
-    }
-
-    submit_job $WHEEL_NAME || {
-        echo "ERROR: Dataproc job submission failed."
-        echo "Wheel submitted: $BUCKET/$WHEEL_NAME"
-        echo "Check logs: gcloud dataproc jobs list --region=$REGION --project=$PROJECT"
         log "FAILED" $VERSION $SCRIPT $WHEEL_NAME
         exit 1
     }

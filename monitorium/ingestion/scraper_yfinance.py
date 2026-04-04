@@ -4,10 +4,10 @@ import os
 from datetime import date, timedelta
 import pandas as pd
 from ingestion.utils import upload_to_gcs
+from ingestion.config import TICKERS
 
 load_dotenv()
 
-TICKERS = []
 BRONZE_BUCKET = os.getenv("GCS_BRONZE_BUCKET")
 RUN_DATE = os.getenv("RUN_DATE", date.today().isoformat())
 
@@ -98,7 +98,7 @@ def fetch_metadata(tickers: list) -> list:
     return results
 
 if __name__ == "__main__":
-    tickers = TICKERS or ["AAPL", "MSFT", "JPM"]
+    tickers = TICKERS
 
     prices = fetch_prices(tickers, start=RUN_DATE, end=RUN_DATE)
     metadata = fetch_metadata(tickers)

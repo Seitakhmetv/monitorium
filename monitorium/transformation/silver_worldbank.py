@@ -4,13 +4,13 @@ from pyspark.sql import functions as F
 from pyspark.sql.types import DateType, FloatType, LongType
 from dotenv import load_dotenv
 from ingestion.utils import build_spark, read_bronze, validate, write_silver
+from datetime import date
 
 load_dotenv()
 
 BRONZE_BUCKET = os.getenv("GCS_BRONZE_BUCKET")
 SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")
-RUN_DATE = os.getenv("RUN_DATE")  # pass this in at runtime
-
+RUN_DATE = os.getenv("RUN_DATE") or str(date.today())
 DEV = os.getenv("DEV", "false") == "true"
 
 def clean_worldbank(df):
