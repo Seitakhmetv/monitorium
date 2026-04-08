@@ -8,8 +8,8 @@ load_dotenv()
 PROJECT_ID = os.getenv("GCP_PROJECT_ID")
 DATASET = os.getenv("BQ_DATASET")
 SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")
-RUN_DATE = os.getenv("RUN_DATE")
-
+from datetime import date
+RUN_DATE = os.getenv("RUN_DATE") or str(date.today())
 
 def build_news(spark):
     """

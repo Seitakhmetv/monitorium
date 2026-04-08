@@ -103,6 +103,22 @@ def scraper_news_run(request):
 
     return f"Uploaded {len(deduped)} articles", 200
 
+@functions_framework.http
+def scraper_kase_run(request):
+    from ingestion.scraper_kase import fetch_kase_prices
+    from ingestion.config import KASE_TICKERS
+
+    run_date = str(date.today())
+
+    prices = fetch_kase_prices(
+        tickers=KASE_TICKERS,
+        from_date=str(date.today()),
+        to_date=str(date.today()+timedelta(days=1))
+    )
+    upload_to_gcs(prices, os.getenv("GCS_BRONZE_BUCKET"),
+                f"raw/kase_prices/{run_date}.json")
+
+    return f"Uploaded {len(prices)} KASE historical rows", 200
 
 # ── orchestration ─────────────────────────────────────────────────────────────
 
@@ -203,3 +219,21 @@ def run_silver_backfill(request):
             return f"FAILED: {script}", 500
         print(f"✓ {script}")
     return "Silver backfill complete", 200
+
+@functions_framework.http
+def backfill_kase(request):
+    from ingestion.scraper_kase import fetch_kase_prices
+    from ingestion.config import KASE_TICKERS
+
+    prices = fetch_kase_prices(
+        tickers=KASE_TICKERS,
+        from_date="2000-01-01",
+        to_date=str(date.today())
+    )
+
+    upload_to_gcs(
+        prices,
+        os.getenv("GCS_BRONZE_BUCKET"),
+        f"raw/kase_prices/backfill/all.json"
+    )
+    return f"Uploaded {len(prices)} KASE historical rows", 200

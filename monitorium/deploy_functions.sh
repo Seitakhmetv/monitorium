@@ -42,14 +42,17 @@ echo " Region  : $REGION"
 echo "═══════════════════════════════════════════"
 echo ""
 
-# deploy_function scraper-yfinance scraper_yfinance_run
-# deploy_function scraper-worldbank scraper_worldbank_run
-# deploy_function scraper-news scraper_news_run
-# deploy_function run-silver run_silver 3600s 512MB
-# deploy_function run-gold run_gold 3600s 512MB
+deploy_function scraper-yfinance scraper_yfinance_run
+deploy_function scraper-worldbank scraper_worldbank_run
+deploy_function scraper-news scraper_news_run
+deploy_function run-silver run_silver 3600s 512MB
+deploy_function run-gold run_gold 3600s 512MB
 
-# deploy_function backfill backfill 3600s 512MB
+deploy_function backfill backfill 3600s 512MB
 deploy_function run-silver-backfill run_silver_backfill 3600s 512MB
+deploy_function backfill-kase backfill_kase 3600s 512MB
+deploy_function scraper_kase scraper_kase_run 3600s 512MB
+
 
 echo ""
 echo "✓ All functions deployed."

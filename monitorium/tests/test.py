@@ -1,16 +1,24 @@
-from ingestion.utils import build_spark, write_gold
-import os
-from dotenv import load_dotenv
+import requests
+from datetime import datetime
 
-load_dotenv()
+def test_kase_api(ticker="HSBK"):
+    # from 2000-01-01 to today
+    from_ts = int(datetime(2026, 4, 4).timestamp())
+    to_ts   = int(datetime.today().timestamp())
 
-PROJECT_ID = os.getenv("GCP_PROJECT_ID")
-DATASET = os.getenv("BQ_DATASET")
-SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")
-RUN_DATE = os.getenv("RUN_DATE")
+    url = "https://kase.kz/tv-charts/securities/history"
+    params = {
+        "symbol": f"ALL:{ticker}",
+        "resolution": "1D",
+        "from": from_ts,
+        "to": to_ts,
+        "countback": 9999,  # max bars
+        "chart_language_code": "ru"
+    }
+    headers = {"User-Agent": "Mozilla/5.0"}
 
+    resp = requests.get(url, params=params, headers=headers)
+    print(f"Status: {resp.status_code}")
+    print(resp.json())
 
-spark = build_spark("test")
-df = spark.read.parquet(f"gs://{SILVER_BUCKET}/prices/run_date={RUN_DATE}/")
-
-print(df.show(5))
+test_kase_api("HSBK")

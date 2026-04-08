@@ -43,6 +43,12 @@ def clean_prices(df):
 if __name__ == "__main__":
     spark = build_spark("monitorium-silver-prices")
     df_raw = read_bronze(spark, RUN_DATE, BRONZE_BUCKET, "prices")
+    
+    if df_raw.count() == 0:
+        print(f"No data for {RUN_DATE} — skipping")
+        spark.stop()
+        exit(0)
+    
     df_clean = clean_prices(df_raw)
     validate(df_clean, ["ticker", "date"])
     write_silver(df_clean, SILVER_BUCKET, "prices", RUN_DATE)

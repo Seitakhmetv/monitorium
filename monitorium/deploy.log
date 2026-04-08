@@ -37,3 +37,5 @@
 2026-04-04 16:37:37 | SUCCESS | version=082a636 | script=transformation/silver_prices.py | wheel=monitorium-cf5b94c-py3-none-any.whl
 2026-04-04 19:31:13 | SUCCESS | version=082a636 | script=transformation/silver_prices.py | wheel=monitorium-cf5b94c-py3-none-any.whl
 2026-04-04 20:38:23 | SUCCESS | version=082a636 | script=transformation/silver_prices_backfill.py | wheel=monitorium-cf5b94c-py3-none-any.whl
+2026-04-04 22:10:07 | SUCCESS | version=acf0f0e | script=transformation/silver_worldbank_backfill.py | wheel=monitorium-cf5b94c-py3-none-any.whl
+2026-04-04 22:52:58 | SUCCESS | version=acf0f0e | script=transformation/gold_dim_company.py | wheel=monitorium-cf5b94c-py3-none-any.whl
