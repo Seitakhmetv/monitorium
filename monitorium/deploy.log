@@ -39,3 +39,8 @@
 2026-04-04 20:38:23 | SUCCESS | version=082a636 | script=transformation/silver_prices_backfill.py | wheel=monitorium-cf5b94c-py3-none-any.whl
 2026-04-04 22:10:07 | SUCCESS | version=acf0f0e | script=transformation/silver_worldbank_backfill.py | wheel=monitorium-cf5b94c-py3-none-any.whl
 2026-04-04 22:52:58 | SUCCESS | version=acf0f0e | script=transformation/gold_dim_company.py | wheel=monitorium-cf5b94c-py3-none-any.whl
+2026-04-09 12:37:27 | SUCCESS | version=64f12e1 | script=transformation/silver_prices.py | wheel=monitorium-cf5b94c-py3-none-any.whl
+2026-04-09 17:52:35 | SUCCESS | version=64f12e1 | script=transformation/silver_news.py | wheel=monitorium-cf5b94c-py3-none-any.whl
+2026-04-09 18:26:13 | SUCCESS | version=64f12e1 | script=transformation/silver_news.py | wheel=monitorium-cf5b94c-py3-none-any.whl
+2026-04-09 19:23:36 | SUCCESS | version=64f12e1 | script=transformation/silver_news.py | wheel=monitorium-cf5b94c-py3-none-any.whl
+2026-04-09 19:26:21 | SUCCESS | version=64f12e1 | script=transformation/silver_news.py | wheel=monitorium-cf5b94c-py3-none-any.whl

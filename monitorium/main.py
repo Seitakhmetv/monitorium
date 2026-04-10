@@ -4,6 +4,10 @@ import functions_framework
 from ingestion.scraper_yfinance import fetch_prices, fetch_metadata
 from ingestion.scraper_worldbank import fetch_all, INDICATORS, COUNTRIES, flatten_for_df
 from ingestion.scraper_news import fetch_news, deduplicate
+from ingestion.scraper_adilet import fetch_adilet
+from ingestion.scraper_kase_news import fetch_kase_news
+from ingestion.scraper_kapital import fetch_kapital
+from ingestion.scraper_kursiv import fetch_kursiv
 from ingestion.utils import upload_to_gcs
 from datetime import date, timedelta
 from ingestion.config import TICKERS
@@ -91,17 +95,21 @@ def scraper_worldbank_run(request):
 @functions_framework.http
 def scraper_news_run(request):
     run_date = str(date.today())
+    adilet_date = str(date.today().strftime("%Y-%m"))
     tickers = TICKERS
 
     all_articles = []
     for ticker in tickers:
         all_articles.extend(fetch_news(ticker))
-
     deduped = deduplicate(all_articles)
     upload_to_gcs(deduped, os.getenv("GCS_BRONZE_BUCKET"),
                   f"raw/news/{run_date}.json")
+    upload_to_gcs(fetch_kase_news(start_date=run_date, end_date=run_date), os.getenv("GCS_BRONZE_BUCKET"), f"raw/kase_news/{run_date}.json")
+    upload_to_gcs(fetch_kapital(), os.getenv("GCS_BRONZE_BUCKET"), f"raw/kapital/{run_date}.json")
+    upload_to_gcs(fetch_kursiv(), os.getenv("GCS_BRONZE_BUCKET"), f"raw/kursiv/{run_date}.json")
+    upload_to_gcs(fetch_adilet(adilet_date), os.getenv("GCS_BRONZE_BUCKET"), f"raw/adilet/{run_date}.json")
 
-    return f"Uploaded {len(deduped)} articles", 200
+    return f"Uploaded articles", 200
 
 @functions_framework.http
 def scraper_kase_run(request):
