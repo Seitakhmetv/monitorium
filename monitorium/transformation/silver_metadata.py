@@ -10,7 +10,8 @@ load_dotenv()
 
 BRONZE_BUCKET = os.getenv("GCS_BRONZE_BUCKET")
 SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")
-RUN_DATE = os.getenv("RUN_DATE") or str(date.today())
+import sys
+RUN_DATE = sys.argv[1] if len(sys.argv) > 1 else os.getenv("RUN_DATE") or str(date.today())
 
 DEV = os.getenv("DEV", "false") == "true"
 

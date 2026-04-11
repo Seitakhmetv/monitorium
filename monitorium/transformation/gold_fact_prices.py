@@ -9,7 +9,8 @@ PROJECT_ID = os.getenv("GCP_PROJECT_ID")
 DATASET = os.getenv("BQ_DATASET")
 SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")
 from datetime import date
-RUN_DATE = os.getenv("RUN_DATE") or str(date.today())
+import sys
+RUN_DATE = sys.argv[1] if len(sys.argv) > 1 else os.getenv("RUN_DATE") or str(date.today())
 
 def build_fact_prices(spark):
     """
@@ -43,6 +44,7 @@ def build_fact_prices(spark):
             prices_df["low"],
             prices_df["close"],
             prices_df["volume"],
+            prices_df["currency"],
             F.lit(RUN_DATE).alias("run_date")
         ) \
         .dropDuplicates(["date_key", "ticker"])

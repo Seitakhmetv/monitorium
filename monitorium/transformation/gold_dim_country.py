@@ -11,7 +11,8 @@ PROJECT_ID = os.getenv("GCP_PROJECT_ID")
 DATASET = os.getenv("BQ_DATASET")
 SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")
 from datetime import date
-RUN_DATE = os.getenv("RUN_DATE") or str(date.today())
+import sys
+RUN_DATE = sys.argv[1] if len(sys.argv) > 1 else os.getenv("RUN_DATE") or str(date.today())
 
 def build_dim_country(spark):
     """
@@ -29,7 +30,7 @@ def build_dim_country(spark):
     Return DataFrame with: country, country_name
     """
     # your code here
-    df = spark.read.parquet(f"gs://{SILVER_BUCKET}/worldbank/run_date={RUN_DATE}/")
+    df = spark.read.parquet(f"gs://{SILVER_BUCKET}/worldbank/run_date=*/")  # was run_date={RUN_DATE}
     distinct_countries = df.select("country").distinct()
 
     result_df = distinct_countries.withColumn(

@@ -11,7 +11,8 @@ load_dotenv(override=True)
 
 BRONZE_BUCKET = os.getenv("GCS_BRONZE_BUCKET")
 SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")
-RUN_DATE = os.getenv("RUN_DATE") or str(date.today())
+import sys
+RUN_DATE = sys.argv[1] if len(sys.argv) > 1 else os.getenv("RUN_DATE") or str(date.today())
 
 FINAL_COLS = ["date", "ticker", "open", "high", "low", "close", "volume", "currency", "run_date"]
 

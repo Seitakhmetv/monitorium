@@ -4,7 +4,7 @@ set -e
 PROJECT=monitorium-491507
 REGION=us-central1
 SA=monitorium-sa@monitorium-491507.iam.gserviceaccount.com
-ENV_VARS="GCS_BRONZE_BUCKET=monitorium-bronze"
+ENV_VARS="GCS_BRONZE_BUCKET=monitorium-bronze,GCS_SILVER_BUCKET=monitorium-silver"
 LOG_FILE="deploy_functions.log"
 
 deploy_function() {
@@ -46,11 +46,11 @@ echo ""
 # deploy_function scraper-worldbank   scraper_worldbank_run 120s  256MB
 # deploy_function scraper-news        scraper_news_run      120s  256MB
 # deploy_function scraper-kase        scraper_kase_run      120s  256MB
-deploy_function run-silver          run_silver            3600s 256MB
-deploy_function run-gold            run_gold              3600s 256MB
+# deploy_function run-silver          run_silver            3600s 256MB
+# deploy_function run-gold            run_gold              3600s 256MB
 # deploy_function backfill            backfill              3600s 512MB
-# deploy_function run-silver-backfill run_silver_backfill   3600s 256MB
-# deploy_function backfill-kase       backfill_kase         3600s 256MB
+deploy_function run-silver-backfill run_silver_backfill   3600s 1024MB
+# deploy_function run-gold-backfill   run_gold_backfill     3600s 1024MB 
 
 
 echo ""

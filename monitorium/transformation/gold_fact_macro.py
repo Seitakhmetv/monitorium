@@ -9,17 +9,14 @@ PROJECT_ID = os.getenv("GCP_PROJECT_ID")
 DATASET = os.getenv("BQ_DATASET")
 SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")
 from datetime import date
-RUN_DATE = os.getenv("RUN_DATE") or str(date.today())
+import sys
+from pyspark.sql.types import DateType
+
+print(f"DEBUG sys.argv: {sys.argv}")
+RUN_DATE = sys.argv[1] if len(sys.argv) > 1 else os.getenv("RUN_DATE") or str(date.today())
+print(f"DEBUG RUN_DATE: {RUN_DATE}")
 
 def build_fact_macro(spark):
-    """
-    Read all worldbank silver partitions — wildcard path.
-    Join to dim_country on country = country_code.
-    Select final columns:
-        country_code, indicator_name, year, value, run_date
-    Deduplicate on [country_code, indicator_name, year].
-    """
-    # your code here
     worldbank_df = spark.read.parquet(f"gs://{SILVER_BUCKET}/worldbank/run_date=*/")
     dim_country_df = spark.read.format("bigquery") \
         .option("project", PROJECT_ID) \
@@ -32,7 +29,7 @@ def build_fact_macro(spark):
             worldbank_df["indicator_name"],
             worldbank_df["year"],
             worldbank_df["value"],
-            F.lit(RUN_DATE).alias("run_date")
+            F.to_date(F.lit(RUN_DATE)).alias("run_date")   # ← cast to DateType, not void
         ) \
         .dropDuplicates(["country_code", "indicator_name", "year"])
     return df
