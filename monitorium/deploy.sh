@@ -58,6 +58,15 @@ upload_wheel() {
     echo "── Uploading as latest..."
     gsutil cp $WHEEL_PATH $BUCKET/monitorium-latest-py3-none-any.whl
 
+    echo "── Building ingestion.zip for Dataproc python_file_uris..."
+    # Dataproc Serverless only supports .py/.zip/.egg in python_file_uris — not .whl.
+    # Zip the ingestion/ package so executors can import it directly.
+    rm -f ingestion.zip
+    zip -r ingestion.zip ingestion/
+    echo "── Uploading ingestion.zip..."
+    gsutil cp ingestion.zip $BUCKET/ingestion.zip
+    rm -f ingestion.zip
+
     echo "── Uploading requirements.txt..."
     gsutil cp requirements.txt $BUCKET/requirements.txt
 
@@ -79,6 +88,15 @@ upload_script() {
     echo "── Script upload done."
 }
 
+upload_all_scripts() {
+    echo "── Uploading all transformation scripts..."
+    for f in transformation/*.py; do
+        gsutil cp $f $BUCKET/$f
+        echo "   ✓ $f"
+    done
+    echo "── All scripts uploaded."
+}
+
 # ── main ──────────────────────────────────────────────────────────────────────
 main() {
     VERSION=$(get_version)
@@ -88,7 +106,7 @@ main() {
     echo "═══════════════════════════════════════════"
     echo " Monitorium Deploy"
     echo " Commit  : $VERSION"
-    echo " Script  : ${SCRIPT:-none (wheel only)}"
+    echo " Script  : ${SCRIPT:-none (wheel + all scripts)}"
     echo "═══════════════════════════════════════════"
     echo ""
 
@@ -115,16 +133,25 @@ main() {
         exit 1
     }
 
-    # Upload script only if one was provided (and it's not --wheel-only)
-    if [ -n "$SCRIPT" ] && [ "$SCRIPT" != "--wheel-only" ]; then
+    if [ "$SCRIPT" == "--wheel-only" ]; then
+        : # wheel-only mode — skip scripts
+    elif [ -n "$SCRIPT" ]; then
+        # Upload a single named script
         upload_script $SCRIPT || {
             echo "ERROR: Script upload failed."
             log "FAILED" $VERSION $SCRIPT $WHEEL_NAME
             exit 1
         }
+    else
+        # Default: upload all transformation scripts
+        upload_all_scripts || {
+            echo "ERROR: Script upload failed."
+            log "FAILED" $VERSION "all-scripts" $WHEEL_NAME
+            exit 1
+        }
     fi
 
-    log "SUCCESS" $VERSION "${SCRIPT:-wheel-only}" $WHEEL_NAME
+    log "SUCCESS" $VERSION "${SCRIPT:-all-scripts}" $WHEEL_NAME
     echo ""
     echo "✓ Deployment complete."
     echo "  Wheel : $WHEEL_NAME"

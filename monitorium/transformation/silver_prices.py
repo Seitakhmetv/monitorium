@@ -1,86 +1,47 @@
 # transformation/silver_prices.py
 
 import os
-from pyspark.sql import functions as F
-from pyspark.sql.types import FloatType, LongType, StringType
-from dotenv import load_dotenv
-from ingestion.utils import build_spark, validate, write_silver
+import sys
 from datetime import date
 
-load_dotenv(override=True)
+try:
+    from dotenv import load_dotenv
+    load_dotenv(override=False)
+except ImportError:
+    pass
 
-BRONZE_BUCKET = os.getenv("GCS_BRONZE_BUCKET")
-SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")
-import sys
+from ingestion.utils import build_spark, write_silver
+from ingestion.transforms import clean_prices
+
+BRONZE = os.getenv("GCS_BRONZE_BUCKET")
+SILVER = os.getenv("GCS_SILVER_BUCKET")
 RUN_DATE = sys.argv[1] if len(sys.argv) > 1 else os.getenv("RUN_DATE") or str(date.today())
 
-FINAL_COLS = ["date", "ticker", "open", "high", "low", "close", "volume", "currency", "run_date"]
 
-
-def clean_global(spark):
-    path = f"gs://{BRONZE_BUCKET}/raw/prices/{RUN_DATE}.json"
-    df = spark.read.json(path)
-
-    if df.count() == 0:
-        print("No global prices — skipping")
+def read_source(spark, path: str):
+    try:
+        df = spark.read.json(path)
+        return df if df.count() > 0 else None
+    except Exception as e:
+        print(f"skip {path}: {e}")
         return None
-
-    return df \
-        .withColumn("date", F.to_date(F.col("date"))) \
-        .withColumn("run_date", F.to_date(F.col("run_date"))) \
-        .withColumn("open", F.col("open").cast(FloatType())) \
-        .withColumn("high", F.col("high").cast(FloatType())) \
-        .withColumn("low", F.col("low").cast(FloatType())) \
-        .withColumn("close", F.col("close").cast(FloatType())) \
-        .withColumn("volume", F.col("volume").cast(LongType())) \
-        .withColumn("currency", F.lit("USD").cast(StringType())) \
-        .filter(F.col("ticker").isNotNull() & F.col("close").isNotNull()) \
-        .select(FINAL_COLS)
-
-
-def clean_kase(spark):
-    path = f"gs://{BRONZE_BUCKET}/raw/kase_prices/{RUN_DATE}.json"
-    df = spark.read.json(path)
-
-    if df.count() == 0:
-        print("No KASE prices — skipping")
-        return None
-
-    return df \
-        .withColumn("date", F.to_date(F.col("date"))) \
-        .withColumn("run_date", F.to_date(F.col("run_date"))) \
-        .withColumn("open", F.col("open").cast(FloatType())) \
-        .withColumn("high", F.col("high").cast(FloatType())) \
-        .withColumn("low", F.col("low").cast(FloatType())) \
-        .withColumn("close", F.col("close").cast(FloatType())) \
-        .withColumn("volume", F.col("volume").cast(LongType())) \
-        .withColumn("currency", F.lit("KZT").cast(StringType())) \
-        .filter(F.col("ticker").isNotNull() & F.col("close").isNotNull()) \
-        .select(FINAL_COLS)
 
 
 if __name__ == "__main__":
     spark = build_spark("monitorium-silver-prices")
 
-    global_df = clean_global(spark)
-    kase_df = clean_kase(spark)
+    df_us   = read_source(spark, f"gs://{BRONZE}/raw/prices/{RUN_DATE}.json")
+    df_kase = read_source(spark, f"gs://{BRONZE}/raw/kase_prices/{RUN_DATE}.json")
 
-    if global_df is None and kase_df is None:
+    if df_us is None and df_kase is None:
         print(f"No price data for {RUN_DATE} — skipping")
         spark.stop()
-        exit(0)
+        raise SystemExit(0)
 
-    # union whichever exist
-    if global_df is not None and kase_df is not None:
-        df_clean = global_df.unionByName(kase_df)
-    elif global_df is not None:
-        df_clean = global_df
-    else:
-        df_clean = kase_df
+    parts = [clean_prices(df) for df in [df_us, df_kase] if df is not None]
+    df = parts[0] if len(parts) == 1 else parts[0].unionByName(parts[1])
+    df = df.dropDuplicates(["ticker", "date"])
 
-    df_clean = df_clean.dropDuplicates(["ticker", "date"])
-
-    validate(df_clean, ["ticker", "date"])
-    write_silver(df_clean, SILVER_BUCKET, "prices", RUN_DATE)
-    print(f"Silver prices written for {RUN_DATE}: {df_clean.count()} rows")
+    write_silver(df, SILVER, "prices", RUN_DATE)
+    print(f"Silver prices written for {RUN_DATE}: {df.count()} rows")
     spark.stop()

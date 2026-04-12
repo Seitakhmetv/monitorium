@@ -1,0 +1,13 @@
+# Local development: everything needed to run Spark jobs and tests locally.
+# Install with: pip install -r requirements-dev.txt
+
+-r requirements.txt
+
+# Spark (Dataproc Serverless provides this in prod)
+pyspark==3.5.3
+
+# BigQuery connector for local gold-layer development
+google-cloud-bigquery
+
+# Testing
+pytest

@@ -1,40 +1,43 @@
+# transformation/silver_metadata.py
+
 import os
-from pyspark.sql import SparkSession
-from pyspark.sql import functions as F
-from pyspark.sql.types import DateType, FloatType, LongType
-from dotenv import load_dotenv
-from ingestion.utils import build_spark, read_bronze, validate, write_silver
+import sys
 from datetime import date
 
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv(override=False)
+except ImportError:
+    pass
 
-BRONZE_BUCKET = os.getenv("GCS_BRONZE_BUCKET")
-SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")
-import sys
+from ingestion.utils import build_spark, write_silver
+from ingestion.transforms import clean_metadata, build_kase_stubs
+from ingestion.config import KASE_TICKERS
+
+BRONZE = os.getenv("GCS_BRONZE_BUCKET")
+SILVER = os.getenv("GCS_SILVER_BUCKET")
 RUN_DATE = sys.argv[1] if len(sys.argv) > 1 else os.getenv("RUN_DATE") or str(date.today())
 
-DEV = os.getenv("DEV", "false") == "true"
-
-def clean_metadata(df):
-    """
-    1. Cast run_date to DateType
-    2. Rename symbol -> ticker for consistency across all tables
-    3. Cast marketCap to LongType
-    4. Filter nulls on ticker, sector
-    5. Deduplicate on ["ticker", "run_date"]
-    """
-    df_clean = df.withColumn("run_date", F.to_date(F.col("run_date"))) \
-    .withColumnRenamed("symbol", "ticker") \
-    .withColumn("marketCap", F.col("marketCap").cast(LongType())) \
-    .filter(F.col("ticker").isNotNull() & F.col("sector").isNotNull()) \
-    .dropDuplicates(["ticker", "run_date"])
-    return df_clean
 
 if __name__ == "__main__":
     spark = build_spark("monitorium-silver-metadata")
-    df_raw = read_bronze(spark, RUN_DATE, BRONZE_BUCKET, "metadata")
-    df_clean = clean_metadata(df_raw)
-    validate(df_clean, ["ticker", "run_date"])
-    write_silver(df_clean, SILVER_BUCKET, "metadata", RUN_DATE)
-    print(f"Silver metadata written for {RUN_DATE}")
+
+    df_raw = spark.read.json(f"gs://{BRONZE}/raw/metadata/{RUN_DATE}.json")
+    if df_raw.count() == 0:
+        print(f"No metadata for {RUN_DATE} — skipping")
+        spark.stop()
+        raise SystemExit(0)
+
+    df = clean_metadata(df_raw)
+
+    # Add NULL-filled stubs for KASE tickers not present in yfinance metadata,
+    # so dim_company always has a row for every ticker that appears in fact_stock_prices.
+    existing = [r["ticker"] for r in df.select("ticker").collect()]
+    stubs = build_kase_stubs(spark, RUN_DATE, existing, KASE_TICKERS)
+    if stubs is not None:
+        df = df.unionByName(stubs)
+        print(f"Added {stubs.count()} KASE stubs")
+
+    write_silver(df, SILVER, "metadata", RUN_DATE)
+    print(f"Silver metadata written for {RUN_DATE}: {df.count()} rows")
     spark.stop()

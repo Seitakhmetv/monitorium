@@ -23,45 +23,62 @@ def submit_dataproc_job(script: str, run_date: str) -> int:
     from google.cloud import dataproc_v1
 
     project = "monitorium-491507"
-    region = "us-central1"
-    bucket = "gs://monitorium-scripts"
-    wheel = f"{bucket}/monitorium-latest-py3-none-any.whl"
+    region  = "us-central1"
+    bucket  = "gs://monitorium-scripts"
+
+    # ingestion.zip (built by deploy.sh) distributes the ingestion package to Dataproc.
+    # Dataproc Serverless python_file_uris only supports .py/.zip/.egg — not .whl.
+    ingestion_zip = f"{bucket}/ingestion.zip"
+
+    bronze_bucket = os.getenv("GCS_BRONZE_BUCKET", "monitorium-bronze")
+    silver_bucket = os.getenv("GCS_SILVER_BUCKET", "monitorium-silver")
+    gcp_project   = os.getenv("GCP_PROJECT_ID", project)
+    bq_dataset    = os.getenv("BQ_DATASET", "monitorium")
 
     batch_client = dataproc_v1.BatchControllerClient(
         client_options={"api_endpoint": f"{region}-dataproc.googleapis.com:443"}
     )
 
+    # All env vars passed explicitly so transformation scripts don't need dotenv on Dataproc.
+    env_props = {
+        "spark.executorEnv.RUN_DATE":          run_date,
+        "spark.driverEnv.RUN_DATE":            run_date,
+        "spark.executorEnv.GCS_BRONZE_BUCKET": bronze_bucket,
+        "spark.driverEnv.GCS_BRONZE_BUCKET":   bronze_bucket,
+        "spark.executorEnv.GCS_SILVER_BUCKET": silver_bucket,
+        "spark.driverEnv.GCS_SILVER_BUCKET":   silver_bucket,
+        "spark.executorEnv.GCP_PROJECT_ID":    gcp_project,
+        "spark.driverEnv.GCP_PROJECT_ID":      gcp_project,
+        "spark.executorEnv.BQ_DATASET":        bq_dataset,
+        "spark.driverEnv.BQ_DATASET":          bq_dataset,
+        "spark.executorEnv.ENV":               "dataproc",
+        "spark.driverEnv.ENV":                 "dataproc",
+    }
+
     batch = {
         "pyspark_batch": {
             "main_python_file_uri": f"{bucket}/{script}",
-            "python_file_uris": [wheel],
-            "file_uris": [f"{bucket}/.env"],
-            "args": [run_date],
+            "python_file_uris":     [ingestion_zip],
+            "file_uris":            [f"{bucket}/.env"],
+            "args":                 [run_date],
         },
         "environment_config": {
             "execution_config": {
                 "service_account": "monitorium-sa@monitorium-491507.iam.gserviceaccount.com"
             }
         },
-        "runtime_config": {
-            "properties": {
-                "spark.executorEnv.RUN_DATE": run_date,
-                "spark.driverEnv.RUN_DATE": run_date,
-            }
-        }
+        "runtime_config": {"properties": env_props},
     }
 
     operation = batch_client.create_batch(
         parent=f"projects/{project}/locations/{region}",
-        batch=batch
+        batch=batch,
     )
 
-    result = operation.result()  # waits for completion
-    print(f"Batch job finished: {result.state}")
+    result = operation.result()  # blocks until completion
+    print(f"Batch finished [{script}]: {result.state}")
 
-    if result.state == dataproc_v1.Batch.State.SUCCEEDED:
-        return 0
-    return 1
+    return 0 if result.state == dataproc_v1.Batch.State.SUCCEEDED else 1
 
 
 # ── scrapers ──────────────────────────────────────────────────────────────────
@@ -135,20 +152,39 @@ def scraper_kase_run(request):
 
 @functions_framework.http
 def run_silver(request):
-    run_date = str(date.today())
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    for script in [
+    scripts = [
         "transformation/silver_prices.py",
         "transformation/silver_metadata.py",
         "transformation/silver_worldbank.py",
         "transformation/silver_news.py",
-    ]:
-        print(f"Submitting {script}...")
-        result = submit_dataproc_job(script, run_date)
-        if result != 0:
-            return f"FAILED: {script}", 500
-        print(f"✓ {script}")
+    ]
+    run_date = str(date.today())
+    failures = []
 
+    # Silver scripts are independent — submit all in parallel to halve wall-clock time.
+    with ThreadPoolExecutor(max_workers=len(scripts)) as executor:
+        future_to_script = {
+            executor.submit(submit_dataproc_job, script, run_date): script
+            for script in scripts
+        }
+        for future in as_completed(future_to_script):
+            script = future_to_script[future]
+            try:
+                result = future.result()
+            except Exception as exc:
+                print(f"✗ {script}: {exc}")
+                failures.append(script)
+                continue
+            if result != 0:
+                print(f"✗ {script}: FAILED")
+                failures.append(script)
+            else:
+                print(f"✓ {script}")
+
+    if failures:
+        return f"FAILED: {', '.join(failures)}", 500
     return "Silver complete", 200
 
 
@@ -306,15 +342,9 @@ def backfill(request):
 
 @functions_framework.http
 def run_silver_backfill(request):
-    for script in [
-        "transformation/silver_prices_backfill.py",
-        "transformation/silver_worldbank_backfill.py",
-        "transformation/silver_metadata_backfill.py",
-        "transformation/silver_news_backfill.py",
-    ]:
-        print(f"Submitting {script}...")
-        result = submit_dataproc_job(script, str(date.today()))
-        if result != 0:
-            return f"FAILED: {script}", 500
-        print(f"✓ {script}")
+    # One Dataproc job handles all silver backfills in sequence.
+    # Single cold-start instead of four — cheaper and simpler.
+    result = submit_dataproc_job("transformation/silver_backfill_all.py", str(date.today()))
+    if result != 0:
+        return "Silver backfill FAILED", 500
     return "Silver backfill complete", 200

@@ -12,9 +12,7 @@ from datetime import date
 import sys
 from pyspark.sql.types import DateType
 
-print(f"DEBUG sys.argv: {sys.argv}")
 RUN_DATE = sys.argv[1] if len(sys.argv) > 1 else os.getenv("RUN_DATE") or str(date.today())
-print(f"DEBUG RUN_DATE: {RUN_DATE}")
 
 def build_fact_macro(spark):
     worldbank_df = spark.read.parquet(f"gs://{SILVER_BUCKET}/worldbank/run_date=*/")

@@ -1,77 +1,49 @@
+# transformation/silver_prices_backfill.py
+
 import os
-from pyspark.sql import functions as F
-from pyspark.sql.types import DateType, FloatType, LongType, StringType
-from dotenv import load_dotenv
+from functools import reduce
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv(override=False)
+except ImportError:
+    pass
+
 from ingestion.utils import build_spark
-from datetime import date
+from ingestion.transforms import clean_prices
+from pyspark.sql import functions as F
 
-load_dotenv(override=True)
-
-BRONZE_BUCKET = os.getenv("GCS_BRONZE_BUCKET")
-SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")
-
-FINAL_COLS = ["date", "ticker", "open", "high", "low", "close", "volume", "currency", "run_date"]
-
-
-def clean_prices(df):
-    # Drop adj_close only if it exists — KASE data never has it
-    if "adj_close" in df.columns:
-        df = df.drop("adj_close")
-
-    # currency: yfinance data won't have it, KASE data will
-    if "currency" not in df.columns:
-        df = df.withColumn("currency", F.lit("USD").cast(StringType()))
-
-    return df \
-        .withColumn("date", F.to_date(F.col("date"))) \
-        .withColumn("run_date", F.to_date(F.col("run_date"))) \
-        .withColumn("open", F.col("open").cast(FloatType())) \
-        .withColumn("high", F.col("high").cast(FloatType())) \
-        .withColumn("low", F.col("low").cast(FloatType())) \
-        .withColumn("close", F.col("close").cast(FloatType())) \
-        .withColumn("volume", F.col("volume").cast(LongType())) \
-        .filter(F.col("ticker").isNotNull() & F.col("close").isNotNull()) \
-        .dropDuplicates(["ticker", "date"]) \
-        .select(FINAL_COLS)
+BRONZE = os.getenv("GCS_BRONZE_BUCKET")
+SILVER = os.getenv("GCS_SILVER_BUCKET")
 
 
 if __name__ == "__main__":
     spark = build_spark("monitorium-silver-prices-backfill")
-
-    # Enable dynamic partition overwrite so only touched partitions are replaced,
-    # leaving all existing daily silver partitions intact.
     spark.conf.set("spark.sql.sources.partitionOverwriteMode", "dynamic")
 
-    # Read US backfill — one JSON per year
-    df_us = spark.read.json(f"gs://{BRONZE_BUCKET}/raw/prices/backfill/*.json")
+    dfs = []
+    for path, label in [
+        (f"gs://{BRONZE}/raw/prices/backfill/*.json",      "yfinance"),
+        (f"gs://{BRONZE}/raw/kase_prices/backfill/all.json", "KASE"),
+    ]:
+        try:
+            df = spark.read.json(path)
+            if df.count() > 0:
+                dfs.append(clean_prices(df))
+                print(f"{label}: loaded")
+            else:
+                print(f"{label}: empty — skipping")
+        except Exception as e:
+            print(f"{label}: not found — skipping ({e})")
 
-    # Read KASE backfill if it exists — single all.json
-    try:
-        df_kase = spark.read.json(f"gs://{BRONZE_BUCKET}/raw/kase_prices/backfill/all.json")
-        print(f"KASE backfill rows (raw): {df_kase.count()}")
-    except Exception as e:
-        print(f"No KASE backfill data found, skipping: {e}")
-        df_kase = None
+    if not dfs:
+        print("No price backfill data — nothing to write")
+        spark.stop()
+        raise SystemExit(0)
 
-    df_us_clean = clean_prices(df_us)
+    df = reduce(lambda a, b: a.unionByName(b), dfs).dropDuplicates(["ticker", "date"])
+    print(f"Total rows: {df.count()} | range: {df.agg(F.min('date'), F.max('date')).collect()}")
 
-    if df_kase is not None:
-        df_kase_clean = clean_prices(df_kase)
-        df_clean = df_us_clean.unionByName(df_kase_clean)
-    else:
-        df_clean = df_us_clean
-
-    # Final dedup across both sources on [ticker, date]
-    df_clean = df_clean.dropDuplicates(["ticker", "date"])
-
-    print(f"Total rows: {df_clean.count()}")
-    print(f"Date range: {df_clean.agg(F.min('date'), F.max('date')).collect()}")
-
-    # Partitioned overwrite — safe to re-run, won't touch daily silver partitions
-    df_clean.write \
-        .mode("overwrite") \
-        .partitionBy("run_date") \
-        .parquet(f"gs://{SILVER_BUCKET}/prices/")
-
+    df.write.mode("overwrite").partitionBy("run_date").parquet(f"gs://{SILVER}/prices/")
     print("Silver prices backfill complete")
     spark.stop()

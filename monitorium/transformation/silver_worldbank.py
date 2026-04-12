@@ -1,39 +1,42 @@
+# transformation/silver_worldbank.py
+
 import os
-from pyspark.sql import SparkSession
-from pyspark.sql import functions as F
-from pyspark.sql.types import DateType, FloatType, LongType
-from dotenv import load_dotenv
-from ingestion.utils import build_spark, read_bronze, validate, write_silver
+import sys
 from datetime import date
 
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv(override=False)
+except ImportError:
+    pass
 
-BRONZE_BUCKET = os.getenv("GCS_BRONZE_BUCKET")
-SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")
-import sys
+from ingestion.utils import build_spark, write_silver
+from ingestion.transforms import clean_worldbank
+
+BRONZE = os.getenv("GCS_BRONZE_BUCKET")
+SILVER = os.getenv("GCS_SILVER_BUCKET")
 RUN_DATE = sys.argv[1] if len(sys.argv) > 1 else os.getenv("RUN_DATE") or str(date.today())
-DEV = os.getenv("DEV", "false") == "true"
 
-def clean_worldbank(df):
-    """
-    1. Cast run_date to DateType
-    2. Cast date (year string "2025") to IntegerType, rename to year
-    3. Cast value to FloatType
-    4. Filter nulls on country, value, year
-    5. Deduplicate on ["country", "indicator_name", "year"]
-    """
-    df_clean = df.withColumn("run_date", F.to_date(F.col("run_date"))) \
-    .withColumn("year", F.col("date").cast("int")) \
-    .withColumn("value", F.col("value").cast(FloatType())) \
-    .filter(F.col("country").isNotNull() & F.col("value").isNotNull() & F.col("year").isNotNull()) \
-    .dropDuplicates(["country", "indicator_name", "year"])
-    return df_clean
 
 if __name__ == "__main__":
     spark = build_spark("monitorium-silver-worldbank")
-    df_raw = read_bronze(spark, RUN_DATE, BRONZE_BUCKET, "worldbank")
-    df_clean = clean_worldbank(df_raw)
-    validate(df_clean, ["indicator_name", "country"])
-    write_silver(df_clean, SILVER_BUCKET, "worldbank", RUN_DATE)
-    print(f"Silver worldbank written for {RUN_DATE}")
+
+    # Worldbank bronze is written per-indicator: raw/worldbank/{indicator}/{date}.json
+    # Use wildcard to read all indicators for the run date in one pass.
+    path = f"gs://{BRONZE}/raw/worldbank/*/{RUN_DATE}.json"
+    try:
+        df_raw = spark.read.json(path)
+    except Exception as e:
+        print(f"No worldbank data for {RUN_DATE}: {e}")
+        spark.stop()
+        raise SystemExit(0)
+
+    if df_raw.count() == 0:
+        print(f"No worldbank data for {RUN_DATE} — skipping")
+        spark.stop()
+        raise SystemExit(0)
+
+    df = clean_worldbank(df_raw)
+    write_silver(df, SILVER, "worldbank", RUN_DATE)
+    print(f"Silver worldbank written for {RUN_DATE}: {df.count()} rows")
     spark.stop()
