@@ -46,7 +46,7 @@ TAG_SCHEMA = StructType([
 ])
 
 tag_udf = F.udf(
-    lambda title, source, source_type: tag_article(
+    lambda title, source, source_type: __import__('ingestion.tagger', fromlist=['tag_article']).tag_article(
         title or "", source or "", source_type or "news"
     ),
     TAG_SCHEMA

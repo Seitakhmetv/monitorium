@@ -8,18 +8,6 @@ BUCKET=gs://monitorium-scripts
 LOG_FILE="deploy.log"
 SCRIPT=$1
 
-# ── validation ────────────────────────────────────────────────────────────────
-if [ -z "$SCRIPT" ]; then
-    echo "ERROR: No script provided."
-    echo "Usage: bash deploy.sh transformation/silver_prices.py"
-    exit 1
-fi
-
-if [ ! -f "$SCRIPT" ]; then
-    echo "ERROR: Script '$SCRIPT' not found locally."
-    exit 1
-fi
-
 # ── helpers ───────────────────────────────────────────────────────────────────
 get_version() {
     git rev-parse --short HEAD
@@ -36,11 +24,11 @@ log() {
 build_wheel() {
     local VERSION=$1
     echo "── Building wheel (version: $VERSION)..."
-
+    # Clean dist first so tail -1 always gets the new wheel
+    rm -f dist/monitorium-*.whl
     sed -i.bak "s/version=\".*\"/version=\"$VERSION\"/" setup.py
     python3 -m build --wheel --no-isolation
     mv setup.py.bak setup.py
-
     WHEEL_PATH=$(ls dist/monitorium-*.whl | tail -1)
     echo "── Built: $WHEEL_PATH"
 }
@@ -60,7 +48,7 @@ check_existing_wheel() {
     fi
 }
 
-upload_artifacts() {
+upload_wheel() {
     local WHEEL_PATH=$1
     local WHEEL_NAME=$(basename $WHEEL_PATH)
 
@@ -70,55 +58,77 @@ upload_artifacts() {
     echo "── Uploading as latest..."
     gsutil cp $WHEEL_PATH $BUCKET/monitorium-latest-py3-none-any.whl
 
-    echo "── Uploading script: $SCRIPT..."
-    gsutil cp $SCRIPT $BUCKET/$SCRIPT
-
     echo "── Uploading requirements.txt..."
     gsutil cp requirements.txt $BUCKET/requirements.txt
 
     echo "── Creating Dataproc .env and uploading..."
-    sed 's/ENV=local/ENV=dataproc/' .env | grep -v '^RUN_DATE' > .env.dataproc
+    sed 's/ENV=local/ENV=dataproc/' .env \
+        | grep -v '^RUN_DATE' \
+        | grep -v '^GOOGLE_APPLICATION_CREDENTIALS' \
+        > .env.dataproc
     gsutil cp .env.dataproc $BUCKET/.env
     rm .env.dataproc
 
-    echo "── Done uploading."
+    echo "── Wheel upload done."
+}
+
+upload_script() {
+    local SCRIPT=$1
+    echo "── Uploading script: $SCRIPT..."
+    gsutil cp $SCRIPT $BUCKET/$SCRIPT
+    echo "── Script upload done."
 }
 
 # ── main ──────────────────────────────────────────────────────────────────────
 main() {
     VERSION=$(get_version)
+    WHEEL_NAME="monitorium-${VERSION}-py3-none-any.whl"
+
     echo ""
     echo "═══════════════════════════════════════════"
     echo " Monitorium Deploy"
     echo " Commit  : $VERSION"
-    echo " Script  : $SCRIPT"
+    echo " Script  : ${SCRIPT:-none (wheel only)}"
     echo "═══════════════════════════════════════════"
     echo ""
 
-    WHEEL_NAME="monitorium-${VERSION}-py3-none-any.whl"
+    # Validate script path if provided
+    if [ -n "$SCRIPT" ] && [ "$SCRIPT" != "--wheel-only" ] && [ ! -f "$SCRIPT" ]; then
+        echo "ERROR: Script '$SCRIPT' not found locally."
+        exit 1
+    fi
 
     check_existing_wheel $WHEEL_NAME
 
     build_wheel $VERSION || {
-        echo "ERROR: Wheel build failed. Nothing was uploaded or submitted."
-        log "FAILED" $VERSION $SCRIPT $WHEEL_NAME
+        echo "ERROR: Wheel build failed."
+        log "FAILED" $VERSION "${SCRIPT:-wheel-only}" $WHEEL_NAME
         exit 1
     }
-    
+
     WHEEL_PATH=$(ls dist/monitorium-*.whl | tail -1)
     WHEEL_NAME=$(basename $WHEEL_PATH)
 
-    upload_artifacts dist/$WHEEL_NAME || {
-        echo "ERROR: Upload failed. Old wheel may still be on GCS — do not submit manually."
-        log "FAILED" $VERSION $SCRIPT $WHEEL_NAME
+    upload_wheel $WHEEL_PATH || {
+        echo "ERROR: Wheel upload failed."
+        log "FAILED" $VERSION "${SCRIPT:-wheel-only}" $WHEEL_NAME
         exit 1
     }
 
-    log "SUCCESS" $VERSION $SCRIPT $WHEEL_NAME
+    # Upload script only if one was provided (and it's not --wheel-only)
+    if [ -n "$SCRIPT" ] && [ "$SCRIPT" != "--wheel-only" ]; then
+        upload_script $SCRIPT || {
+            echo "ERROR: Script upload failed."
+            log "FAILED" $VERSION $SCRIPT $WHEEL_NAME
+            exit 1
+        }
+    fi
+
+    log "SUCCESS" $VERSION "${SCRIPT:-wheel-only}" $WHEEL_NAME
     echo ""
     echo "✓ Deployment complete."
-    echo "  Wheel   : $WHEEL_NAME"
-    echo "  Log     : $LOG_FILE"
+    echo "  Wheel : $WHEEL_NAME"
+    echo "  Log   : $LOG_FILE"
 }
 
 main "$@"
