@@ -84,23 +84,14 @@ def deduplicate(articles: list) -> list:
     return deduped
 
 
-if __name__ == "__main__":
-    
-    tickers = TICKERS
-
+def fetch(run_date: str) -> list:
     all_articles = []
+    for ticker in TICKERS:
+        all_articles.extend(fetch_news(ticker))
+    return deduplicate(all_articles)
 
-    for ticker in tickers:
-        articles = fetch_news(ticker)
-        all_articles.extend(articles)
-        print(f"{ticker}: {len(articles)} articles fetched")
 
-    deduped = deduplicate(all_articles)
-
-    print(f"After dedup: {len(deduped)} unique articles")
-
-    upload_to_gcs(
-        deduped,
-        BRONZE_BUCKET,
-        f"raw/news/{RUN_DATE}.json"
-    )
+if __name__ == "__main__":
+    articles = fetch(RUN_DATE)
+    print(f"After dedup: {len(articles)} unique articles")
+    upload_to_gcs(articles, BRONZE_BUCKET, f"raw/news/{RUN_DATE}.json")

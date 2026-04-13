@@ -1,49 +1,31 @@
-# transformation/gold_dim_country.py
+import os
+import sys
+from datetime import date
 
 from pyspark.sql import functions as F
-from ingestion.utils import build_spark, write_gold
-import os
 from dotenv import load_dotenv
+
+from ingestion.config import WORLDBANK_COUNTRIES
+from ingestion.utils import build_spark, write_gold
 
 load_dotenv()
 
-PROJECT_ID = os.getenv("GCP_PROJECT_ID")
-DATASET = os.getenv("BQ_DATASET")
+PROJECT_ID    = os.getenv("GCP_PROJECT_ID")
+DATASET       = os.getenv("BQ_DATASET")
 SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")
-from datetime import date
-import sys
 RUN_DATE = sys.argv[1] if len(sys.argv) > 1 else os.getenv("RUN_DATE") or str(date.today())
 
-def build_dim_country(spark):
-    """
-    Read all worldbank silver partitions — not just today's.
-    We want all countries ever seen, not just today's run.
-    Use wildcard path: gs://{SILVER_BUCKET}/worldbank/run_date=*/
-    Extract distinct country codes.
-    Add country_name by mapping code to full name using F.when():
-    US -> United States
-    GB -> United Kingdom
-    DE -> Germany
-    KZ -> Kazakhstan
-    FR -> France
-    JP -> Japan
-    Return DataFrame with: country, country_name
-    """
-    # your code here
-    df = spark.read.parquet(f"gs://{SILVER_BUCKET}/worldbank/run_date=*/")  # was run_date={RUN_DATE}
-    distinct_countries = df.select("country").distinct()
 
-    result_df = distinct_countries.withColumn(
-        "country_name",
-        F.when(F.col("country") == "US", "United States")
-        .when(F.col("country") == "GB", "United Kingdom")
-        .when(F.col("country") == "DE", "Germany")
-        .when(F.col("country") == "KZ", "Kazakhstan")
-        .when(F.col("country") == "FR", "France")
-        .when(F.col("country") == "JP", "Japan")
-        .otherwise("Unknown")
-    )
-    return result_df
+def build_dim_country(spark):
+    df = spark.read.parquet(f"gs://{SILVER_BUCKET}/worldbank/run_date=*/")
+    distinct = df.select("country").distinct()
+
+    # Build mapping dynamically from config — adding a country = one dict entry
+    mapping = F.lit(None).cast("string")
+    for code, name in WORLDBANK_COUNTRIES.items():
+        mapping = F.when(F.col("country") == code, name).otherwise(mapping)
+
+    return distinct.withColumn("country_name", mapping.cast("string"))
 
 
 if __name__ == "__main__":

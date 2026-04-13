@@ -94,26 +94,21 @@ def fetch_adilet(year_month: str) -> list:
     return docs
 
 
-if __name__ == "__main__":
-    # current month + previous month as buffer
-    today = date.today()
+def fetch(run_date: str) -> list:
+    dt = date.fromisoformat(run_date)
     months = [
-        today.strftime("%Y-%m"),
-        (today.replace(day=1) - timedelta(days=1)).strftime("%Y-%m")
+        dt.strftime("%Y-%m"),
+        (dt.replace(day=1) - timedelta(days=1)).strftime("%Y-%m"),
     ]
-
     all_docs = {}
     for ym in months:
-        docs = fetch_adilet(ym)
-        for d in docs:
+        for d in fetch_adilet(ym):
             all_docs[d["article_id"]] = d
-        print(f"✓ adilet {ym}: {len(docs)} documents")
+        print(f"✓ adilet {ym}: fetched")
+    return list(all_docs.values())
 
-    # print(all_docs.values())
-    
-    upload_to_gcs(
-        list(all_docs.values()),
-        BRONZE_BUCKET,
-        f"raw/adilet/{RUN_DATE}.json"
-    )
-    print(f"Uploaded {len(all_docs)} Adilet documents")
+
+if __name__ == "__main__":
+    docs = fetch(RUN_DATE)
+    upload_to_gcs(docs, BRONZE_BUCKET, f"raw/adilet/{RUN_DATE}.json")
+    print(f"Uploaded {len(docs)} Adilet documents")

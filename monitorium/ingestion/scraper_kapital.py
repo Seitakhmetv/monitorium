@@ -89,8 +89,11 @@ def fetch_kapital(max_pages: int = 5) -> list:
     return list(all_articles.values())
 
 
+def fetch(run_date: str) -> list:
+    return fetch_kapital()
+
+
 if __name__ == "__main__":
-    articles = fetch_kapital()
-    # print(articles)
+    articles = fetch(RUN_DATE)
     upload_to_gcs(articles, BRONZE_BUCKET, f"raw/kapital/{RUN_DATE}.json")
     print(f"Uploaded {len(articles)} Kapital articles")

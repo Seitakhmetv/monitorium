@@ -1,41 +1,35 @@
-from pyspark.sql import functions as F
-from ingestion.utils import build_spark, write_gold
 import os
+import sys
+from datetime import date
+
+from pyspark.sql import functions as F
 from dotenv import load_dotenv
+
+from ingestion.utils import build_spark, write_gold
 
 load_dotenv()
 
-PROJECT_ID = os.getenv("GCP_PROJECT_ID")
-DATASET = os.getenv("BQ_DATASET")
+PROJECT_ID    = os.getenv("GCP_PROJECT_ID")
+DATASET       = os.getenv("BQ_DATASET")
 SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")
-from datetime import date
-import sys
 RUN_DATE = sys.argv[1] if len(sys.argv) > 1 else os.getenv("RUN_DATE") or str(date.today())
 
+
 def build_fact_prices(spark):
-    """
-    Read silver prices for RUN_DATE.
-    Join to dim_date on date = date to get date_key.
-    Join to dim_company on ticker where is_current = True to get company_key.
-    Select final columns:
-        date_key, ticker, open, high, low, close, volume, run_date
-    Deduplicate on [date_key, ticker] — idempotent.
-    """
-    # your code here
-    prices_df = spark.read.parquet(f"gs://{SILVER_BUCKET}/prices/run_date={RUN_DATE}/")
+    # "ALL" = backfill mode: read every silver partition at once
+    prices_path = (
+        f"gs://{SILVER_BUCKET}/prices/run_date=*/"
+        if RUN_DATE == "ALL"
+        else f"gs://{SILVER_BUCKET}/prices/run_date={RUN_DATE}/"
+    )
+    prices_df = spark.read.parquet(prices_path)
+
     dim_date_df = spark.read.format("bigquery") \
-        .option("project", PROJECT_ID) \
-        .option("dataset", DATASET) \
-        .option("table", "dim_date") \
+        .option("project", PROJECT_ID).option("dataset", DATASET).option("table", "dim_date") \
         .load()
-    dim_company_df = spark.read.format("bigquery") \
-        .option("project", PROJECT_ID) \
-        .option("dataset", DATASET) \
-        .option("table", "dim_company") \
-        .load() \
-        .filter(F.col("is_current") == True)
-    df = prices_df.join(dim_date_df, prices_df["date"] == dim_date_df["date"], "left") \
-        .join(dim_company_df, prices_df["ticker"] == dim_company_df["ticker"], "left") \
+
+    return prices_df \
+        .join(dim_date_df, prices_df["date"] == dim_date_df["date"], "left") \
         .select(
             dim_date_df["date_key"],
             prices_df["ticker"],
@@ -45,16 +39,17 @@ def build_fact_prices(spark):
             prices_df["close"],
             prices_df["volume"],
             prices_df["currency"],
-            F.lit(RUN_DATE).alias("run_date")
+            F.to_date(F.lit(RUN_DATE if RUN_DATE != "ALL" else str(date.today()))).alias("run_date"),
         ) \
         .dropDuplicates(["date_key", "ticker"])
-    return df
 
 
 if __name__ == "__main__":
     spark = build_spark("monitorium-gold-fact-prices")
     df = build_fact_prices(spark)
     df.show(5)
-    write_gold(df, PROJECT_ID, DATASET, "fact_stock_prices", mode="append")
-    print(f"fact_stock_prices written: {df.count()} rows")
+    # ALL mode: truncate for a clean backfill; daily: append
+    mode = "overwrite" if RUN_DATE == "ALL" else "append"
+    write_gold(df, PROJECT_ID, DATASET, "fact_stock_prices", mode=mode)
+    print(f"fact_stock_prices written ({mode}): {df.count()} rows")
     spark.stop()

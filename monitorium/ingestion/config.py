@@ -1,14 +1,68 @@
-# ingestion/config.py
-
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(dotenv_path=".env")
+
+# ── Price tickers ──────────────────────────────────────────────────────────────
 
 TICKERS = os.getenv("TICKERS", "AAPL,MSFT,JPM").split(",")
 KASE_TICKERS = os.getenv("KASE_TICKERS", "HSBK,KSPI,KCEL").split(",")
 
-# ingestion/config.py additions
+# ── World Bank ─────────────────────────────────────────────────────────────────
+
+WORLDBANK_COUNTRIES = {
+    "US": "United States",
+    "GB": "United Kingdom",
+    "DE": "Germany",
+    "KZ": "Kazakhstan",
+    "FR": "France",
+    "JP": "Japan",
+}
+
+WORLDBANK_INDICATORS = {
+    "gdp_growth":    "NY.GDP.MKTP.KD.ZG",
+    "inflation_cpi": "FP.CPI.TOTL.ZG",
+    "unemployment":  "SL.UEM.TOTL.ZS",
+    "interest_rate": "FR.INR.RINR",
+}
+
+# ── News sources registry ──────────────────────────────────────────────────────
+# To add a new source: create ingestion/scraper_<name>.py with fetch(run_date) -> list
+# then add one entry here. Nothing else changes.
+
+NEWS_SOURCES = {
+    "news":      {"module": "ingestion.scraper_news",      "gcs_prefix": "raw/news"},
+    "kapital":   {"module": "ingestion.scraper_kapital",   "gcs_prefix": "raw/kapital"},
+    "kursiv":    {"module": "ingestion.scraper_kursiv",    "gcs_prefix": "raw/kursiv"},
+    "kase_news": {"module": "ingestion.scraper_kase_news", "gcs_prefix": "raw/kase_news"},
+    "adilet":    {"module": "ingestion.scraper_adilet",    "gcs_prefix": "raw/adilet"},
+}
+
+# ── Pipeline script lists (used by main.py orchestration) ─────────────────────
+
+SILVER_SCRIPTS = [
+    "transformation/silver_prices.py",
+    "transformation/silver_metadata.py",
+    "transformation/silver_worldbank.py",
+    "transformation/silver_news.py",
+]
+
+GOLD_SCRIPTS = [
+    "transformation/gold_dim_company.py",
+    "transformation/gold_dim_country.py",
+    "transformation/gold_fact_prices.py",
+    "transformation/gold_fact_macro.py",
+    "transformation/gold_news.py",
+]
+
+SILVER_BACKFILL_SCRIPTS = [
+    "transformation/silver_prices_backfill.py",
+    "transformation/silver_worldbank_backfill.py",
+    "transformation/silver_metadata_backfill.py",
+    "transformation/silver_news_backfill.py",
+]
+
+# ── Article tagging ────────────────────────────────────────────────────────────
 
 COMPANY_TAGS = {
     "halyk": "HSBK", "народный банк": "HSBK", "halyk bank": "HSBK",
@@ -16,7 +70,7 @@ COMPANY_TAGS = {
     "казмунайгаз": "KMGZ", "kazmunaygas": "KMGZ", "kmg": "KMGZ",
     "казтрансойл": "KZTO", "kaztransoil": "KZTO",
     "казахтелеком": "KZTK", "kazakhtelecom": "KZTK",
-    "kcell": "KCEL", "kcell": "KCEL",
+    "kcell": "KCEL",
     "centercredit": "CCBN", "центркредит": "CCBN",
     "fortebank": "ASBN", "форте банк": "ASBN",
     "air astana": "AIRA", "эйр астана": "AIRA",

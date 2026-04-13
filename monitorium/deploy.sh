@@ -22,14 +22,20 @@ log() {
 }
 
 build_wheel() {
-    local VERSION=$1
-    echo "── Building wheel (version: $VERSION)..."
-    # Clean dist first so tail -1 always gets the new wheel
+    local GIT_HASH=$1
+    # Use a PEP 440-valid version internally (commit count); name the GCS file with the git hash
+    local COMMIT_COUNT=$(git rev-list --count HEAD)
+    local PEP_VERSION="0.1.dev${COMMIT_COUNT}"
+    echo "── Building wheel (version: ${PEP_VERSION}, hash: ${GIT_HASH})..."
     rm -f dist/monitorium-*.whl
-    sed -i.bak "s/version=\".*\"/version=\"$VERSION\"/" setup.py
+    sed -i.bak "s/version=\".*\"/version=\"${PEP_VERSION}\"/" setup.py
     python3 -m build --wheel --no-isolation
     mv setup.py.bak setup.py
-    WHEEL_PATH=$(ls dist/monitorium-*.whl | tail -1)
+    # Rename the built wheel to use the git hash in the GCS filename
+    local BUILT=$(ls dist/monitorium-*.whl | tail -1)
+    local TARGET="dist/monitorium-${GIT_HASH}-py3-none-any.whl"
+    mv "$BUILT" "$TARGET"
+    WHEEL_PATH="$TARGET"
     echo "── Built: $WHEEL_PATH"
 }
 
@@ -58,6 +64,9 @@ upload_wheel() {
     echo "── Uploading as latest..."
     gsutil cp $WHEEL_PATH $BUCKET/monitorium-latest-py3-none-any.whl
 
+    echo "── Uploading as .zip for Dataproc python_file_uris compatibility..."
+    gsutil cp $WHEEL_PATH $BUCKET/monitorium-latest.zip
+
     echo "── Uploading requirements.txt..."
     gsutil cp requirements.txt $BUCKET/requirements.txt
 
@@ -72,11 +81,10 @@ upload_wheel() {
     echo "── Wheel upload done."
 }
 
-upload_script() {
-    local SCRIPT=$1
-    echo "── Uploading script: $SCRIPT..."
-    gsutil cp $SCRIPT $BUCKET/$SCRIPT
-    echo "── Script upload done."
+upload_scripts() {
+    echo "── Uploading transformation scripts..."
+    gsutil -m cp transformation/*.py $BUCKET/transformation/
+    echo "── Scripts upload done."
 }
 
 # ── main ──────────────────────────────────────────────────────────────────────
@@ -88,21 +96,14 @@ main() {
     echo "═══════════════════════════════════════════"
     echo " Monitorium Deploy"
     echo " Commit  : $VERSION"
-    echo " Script  : ${SCRIPT:-none (wheel only)}"
     echo "═══════════════════════════════════════════"
     echo ""
-
-    # Validate script path if provided
-    if [ -n "$SCRIPT" ] && [ "$SCRIPT" != "--wheel-only" ] && [ ! -f "$SCRIPT" ]; then
-        echo "ERROR: Script '$SCRIPT' not found locally."
-        exit 1
-    fi
 
     check_existing_wheel $WHEEL_NAME
 
     build_wheel $VERSION || {
         echo "ERROR: Wheel build failed."
-        log "FAILED" $VERSION "${SCRIPT:-wheel-only}" $WHEEL_NAME
+        log "FAILED" $VERSION "all" $WHEEL_NAME
         exit 1
     }
 
@@ -111,20 +112,17 @@ main() {
 
     upload_wheel $WHEEL_PATH || {
         echo "ERROR: Wheel upload failed."
-        log "FAILED" $VERSION "${SCRIPT:-wheel-only}" $WHEEL_NAME
+        log "FAILED" $VERSION "all" $WHEEL_NAME
         exit 1
     }
 
-    # Upload script only if one was provided (and it's not --wheel-only)
-    if [ -n "$SCRIPT" ] && [ "$SCRIPT" != "--wheel-only" ]; then
-        upload_script $SCRIPT || {
-            echo "ERROR: Script upload failed."
-            log "FAILED" $VERSION $SCRIPT $WHEEL_NAME
-            exit 1
-        }
-    fi
+    upload_scripts || {
+        echo "ERROR: Scripts upload failed."
+        log "FAILED" $VERSION "all" $WHEEL_NAME
+        exit 1
+    }
 
-    log "SUCCESS" $VERSION "${SCRIPT:-wheel-only}" $WHEEL_NAME
+    log "SUCCESS" $VERSION "all" $WHEEL_NAME
     echo ""
     echo "✓ Deployment complete."
     echo "  Wheel : $WHEEL_NAME"

@@ -1,20 +1,17 @@
-# main.py (project root)
+import importlib
+import os
+from datetime import date, timedelta
 
 import functions_framework
-from ingestion.scraper_yfinance import fetch_prices, fetch_metadata
-from ingestion.scraper_worldbank import fetch_all, INDICATORS, COUNTRIES, flatten_for_df
-from ingestion.scraper_news import fetch_news, deduplicate
-from ingestion.scraper_adilet import fetch_adilet
-from ingestion.scraper_kase_news import fetch_kase_news
-from ingestion.scraper_kapital import fetch_kapital
-from ingestion.scraper_kursiv import fetch_kursiv
-from ingestion.utils import upload_to_gcs
+
+from ingestion.config import (
+    KASE_TICKERS, NEWS_SOURCES, SILVER_SCRIPTS, GOLD_SCRIPTS,
+    SILVER_BACKFILL_SCRIPTS, TICKERS,
+)
 from ingestion.scraper_kase import fetch_kase_prices
-from ingestion.config import KASE_TICKERS
-import requests
-from datetime import date, timedelta
-from ingestion.config import TICKERS
-import os
+from ingestion.scraper_worldbank import fetch_all, COUNTRIES, INDICATORS
+from ingestion.scraper_yfinance import fetch_prices, fetch_metadata
+from ingestion.utils import upload_to_gcs
 
 
 # ── shared ────────────────────────────────────────────────────────────────────
@@ -22,10 +19,10 @@ import os
 def submit_dataproc_job(script: str, run_date: str) -> int:
     from google.cloud import dataproc_v1
 
-    project = "monitorium-491507"
-    region = "us-central1"
-    bucket = "gs://monitorium-scripts"
-    wheel = f"{bucket}/monitorium-latest-py3-none-any.whl"
+    project = os.getenv("GCP_PROJECT_ID")
+    region  = "us-central1"
+    bucket  = f"gs://{os.getenv('GCS_SCRIPTS_BUCKET', 'monitorium-scripts')}"
+    wheel   = f"{bucket}/monitorium-latest.zip"
 
     batch_client = dataproc_v1.BatchControllerClient(
         client_options={"api_endpoint": f"{region}-dataproc.googleapis.com:443"}
@@ -40,28 +37,34 @@ def submit_dataproc_job(script: str, run_date: str) -> int:
         },
         "environment_config": {
             "execution_config": {
-                "service_account": "monitorium-sa@monitorium-491507.iam.gserviceaccount.com"
+                "service_account": f"monitorium-sa@{project}.iam.gserviceaccount.com"
             }
         },
         "runtime_config": {
             "properties": {
                 "spark.executorEnv.RUN_DATE": run_date,
-                "spark.driverEnv.RUN_DATE": run_date,
+                "spark.driverEnv.RUN_DATE":   run_date,
             }
-        }
+        },
     }
 
     operation = batch_client.create_batch(
         parent=f"projects/{project}/locations/{region}",
-        batch=batch
+        batch=batch,
     )
-
-    result = operation.result()  # waits for completion
+    result = operation.result()
     print(f"Batch job finished: {result.state}")
+    return 0 if result.state == dataproc_v1.Batch.State.SUCCEEDED else 1
 
-    if result.state == dataproc_v1.Batch.State.SUCCEEDED:
-        return 0
-    return 1
+
+def _run_scripts(scripts: list, run_date: str) -> tuple[bool, str]:
+    """Submit a list of Dataproc scripts sequentially. Returns (ok, error_msg)."""
+    for script in scripts:
+        print(f"Submitting {script}...")
+        if submit_dataproc_job(script, run_date) != 0:
+            return False, script
+        print(f"✓ {script}")
+    return True, ""
 
 
 # ── scrapers ──────────────────────────────────────────────────────────────────
@@ -69,252 +72,213 @@ def submit_dataproc_job(script: str, run_date: str) -> int:
 @functions_framework.http
 def scraper_yfinance_run(request):
     run_date = str(date.today())
+    prices   = fetch_prices(TICKERS, start=run_date, end=run_date)
+    metadata = fetch_metadata(TICKERS)
+    bucket   = os.getenv("GCS_BRONZE_BUCKET")
 
-    tickers = TICKERS
-
-    prices = fetch_prices(tickers, start=run_date, end=run_date)
-    metadata = fetch_metadata(tickers)
-
-    upload_to_gcs(prices, os.getenv("GCS_BRONZE_BUCKET"),
-                  f"raw/prices/{run_date}.json")
-    upload_to_gcs(metadata, os.getenv("GCS_BRONZE_BUCKET"),
-                  f"raw/metadata/{run_date}.json")
-
+    upload_to_gcs(prices,   bucket, f"raw/prices/{run_date}.json")
+    upload_to_gcs(metadata, bucket, f"raw/metadata/{run_date}.json")
     return f"Uploaded {len(prices)} prices, {len(metadata)} metadata", 200
 
 
 @functions_framework.http
 def scraper_worldbank_run(request):
     run_date = str(date.today())
-    all_data = fetch_all(COUNTRIES, INDICATORS)
-
-    for indicator_name, records in all_data.items():
-        upload_to_gcs(records, os.getenv("GCS_BRONZE_BUCKET"),
-                      f"raw/worldbank/{indicator_name}/{run_date}.json")
-
-    return f"Uploaded {sum(len(v) for v in all_data.values())} records", 200
+    data = fetch_all(COUNTRIES, INDICATORS)
+    upload_to_gcs(data, os.getenv("GCS_BRONZE_BUCKET"), f"raw/worldbank/{run_date}.json")
+    return f"Uploaded {len(data)} worldbank records", 200
 
 
 @functions_framework.http
 def scraper_news_run(request):
     run_date = str(date.today())
-    adilet_date = str(date.today().strftime("%Y-%m"))
-    tickers = TICKERS
+    bucket   = os.getenv("GCS_BRONZE_BUCKET")
 
-    all_articles = []
-    for ticker in tickers:
-        all_articles.extend(fetch_news(ticker))
-    deduped = deduplicate(all_articles)
-    upload_to_gcs(deduped, os.getenv("GCS_BRONZE_BUCKET"),
-                  f"raw/news/{run_date}.json")
-    upload_to_gcs(fetch_kase_news(start_date=run_date, end_date=run_date), os.getenv("GCS_BRONZE_BUCKET"), f"raw/kase_news/{run_date}.json")
-    upload_to_gcs(fetch_kapital(), os.getenv("GCS_BRONZE_BUCKET"), f"raw/kapital/{run_date}.json")
-    upload_to_gcs(fetch_kursiv(), os.getenv("GCS_BRONZE_BUCKET"), f"raw/kursiv/{run_date}.json")
-    upload_to_gcs(fetch_adilet(adilet_date), os.getenv("GCS_BRONZE_BUCKET"), f"raw/adilet/{run_date}.json")
+    for source_name, cfg in NEWS_SOURCES.items():
+        try:
+            mod      = importlib.import_module(cfg["module"])
+            articles = mod.fetch(run_date)
+            upload_to_gcs(articles, bucket, f"{cfg['gcs_prefix']}/{run_date}.json")
+            print(f"✓ {source_name}: {len(articles)} articles")
+        except Exception as e:
+            print(f"✗ {source_name}: {e}")
 
-    return f"Uploaded articles", 200
+    return "News scrape complete", 200
+
 
 @functions_framework.http
 def scraper_kase_run(request):
-    from ingestion.scraper_kase import fetch_kase_prices
-    from ingestion.config import KASE_TICKERS
-
     run_date = str(date.today())
-
     prices = fetch_kase_prices(
         tickers=KASE_TICKERS,
-        from_date=str(date.today()),
-        to_date=str(date.today()+timedelta(days=1))
+        from_date=run_date,
+        to_date=str(date.today() + timedelta(days=1)),
     )
-    upload_to_gcs(prices, os.getenv("GCS_BRONZE_BUCKET"),
-                f"raw/kase_prices/{run_date}.json")
+    upload_to_gcs(prices, os.getenv("GCS_BRONZE_BUCKET"), f"raw/kase_prices/{run_date}.json")
+    return f"Uploaded {len(prices)} KASE prices", 200
 
-    return f"Uploaded {len(prices)} KASE historical rows", 200
 
-# ── orchestration ─────────────────────────────────────────────────────────────
+# ── daily orchestration ───────────────────────────────────────────────────────
 
 @functions_framework.http
 def run_silver(request):
     run_date = str(date.today())
-
-    for script in [
-        "transformation/silver_prices.py",
-        "transformation/silver_metadata.py",
-        "transformation/silver_worldbank.py",
-        "transformation/silver_news.py",
-    ]:
-        print(f"Submitting {script}...")
-        result = submit_dataproc_job(script, run_date)
-        if result != 0:
-            return f"FAILED: {script}", 500
-        print(f"✓ {script}")
-
-    return "Silver complete", 200
+    ok, failed = _run_scripts(SILVER_SCRIPTS, run_date)
+    return ("Silver complete", 200) if ok else (f"FAILED: {failed}", 500)
 
 
 @functions_framework.http
 def run_gold(request):
     run_date = str(date.today())
-    for script in [
-        "transformation/gold_dim_company.py",
-        "transformation/gold_dim_country.py",
-        "transformation/gold_fact_prices.py",
-        "transformation/gold_fact_macro.py",
-        "transformation/gold_news.py",
-    ]:
-        print(f"Submitting {script}...")
-        result = submit_dataproc_job(script, run_date)  # run_date passed as arg
-        if result != 0:
-            return f"FAILED: {script}", 500
-        print(f"✓ {script}")
-    return "Gold complete", 200
+    ok, failed = _run_scripts(GOLD_SCRIPTS, run_date)
+    return ("Gold complete", 200) if ok else (f"FAILED: {failed}", 500)
 
 
-#-------------- backfilling -----------------------------
-@functions_framework.http
-def run_gold_backfill(request):
-    from google.cloud import storage as gcs
-
-    client = gcs.Client()
-    silver_bucket = os.getenv("GCS_SILVER_BUCKET")
-
-    # ── one-shot gold scripts (read all partitions themselves) ────────────────
-    # for script in [
-    #     "transformation/gold_dim_date.py",
-    #     "transformation/gold_dim_country.py",
-    #     "transformation/gold_fact_macro.py",
-    # ]:
-    #     print(f"Submitting {script}...")
-    #     result = submit_dataproc_job(script, str(date.today()))
-    #     if result != 0:
-    #         return f"FAILED: {script}", 500
-
-    # ── per-date gold scripts ─────────────────────────────────────────────────
-    def get_silver_dates(prefix):
-        dates = []
-        for blob in client.bucket(silver_bucket).list_blobs(prefix=prefix):
-            # blobs look like prices/run_date=2026-04-01/part-000.parquet
-            part = blob.name.split("run_date=")
-            if len(part) > 1:
-                d = part[1].split("/")[0]
-                if d not in dates:
-                    dates.append(d)
-        return sorted(dates)
-
-    # # dim_company must run in date order to build SCD2 history correctly
-    # for run_date in get_silver_dates("metadata/"):
-    #     result = submit_dataproc_job("transformation/gold_dim_company.py", run_date)
-    #     if result != 0:
-    #         return f"FAILED: gold_dim_company {run_date}", 500
-
-    # for run_date in get_silver_dates("prices/"):
-    #     result = submit_dataproc_job("transformation/gold_fact_prices.py", run_date)
-    #     if result != 0:
-    #         return f"FAILED: gold_fact_prices {run_date}", 500
-
-    for run_date in get_silver_dates("news/"):
-        result = submit_dataproc_job("transformation/gold_news.py", run_date)
-        if result != 0:
-            return f"FAILED: gold_news {run_date}", 500
-
-    return "Gold backfill complete", 200
+# ── backfill ──────────────────────────────────────────────────────────────────
 
 @functions_framework.http
 def backfill(request):
-    BUCKET = os.getenv("GCS_BRONZE_BUCKET")
+    """Bronze backfill: scrape full history into GCS bronze."""
+    bucket     = os.getenv("GCS_BRONZE_BUCKET")
     START_YEAR = 2000
-    END_YEAR = date.today().year
-    log = []
+    log        = []
 
-    # ── find last trading day for yfinance ────────────────────────────────────
+    # ── yfinance: find last trading day ──────────────────────────────────────
     def find_last_trading_day_yfinance() -> str:
-        check_date = date.today() - timedelta(days=1)
+        check = date.today() - timedelta(days=1)
         for _ in range(10):
-            date_str = str(check_date)
-            data = fetch_prices(["AAPL"], start=date_str, end=date_str)
-            if data:
-                print(f"✓ yfinance last trading day: {date_str}")
-                return date_str
-            check_date -= timedelta(days=1)
+            d = str(check)
+            if fetch_prices(["AAPL"], start=d, end=d):
+                return d
+            check -= timedelta(days=1)
         return str(date.today() - timedelta(days=1))
 
-    # ── find last trading day for kase ────────────────────────────────────────
+    # ── kase: find last trading day ───────────────────────────────────────────
     def find_last_trading_day_kase() -> str:
+        import requests as req
         from datetime import datetime
-        check_date = date.today() - timedelta(days=1)
+        check = date.today() - timedelta(days=1)
         for _ in range(10):
-            date_str = str(check_date)
-            from_ts = int(datetime.strptime(date_str, "%Y-%m-%d").timestamp())
-            to_ts = int(datetime.strptime(date_str, "%Y-%m-%d").timestamp()) + 86400
-            resp = requests.get(
+            d = str(check)
+            from_ts = int(datetime.strptime(d, "%Y-%m-%d").timestamp())
+            to_ts   = from_ts + 86400
+            resp = req.get(
                 "https://kase.kz/tv-charts/securities/history",
                 params={"symbol": "ALL:HSBK", "resolution": "1D",
                         "from": from_ts, "to": to_ts},
                 headers={"User-Agent": "Mozilla/5.0"},
-                timeout=10
+                timeout=10,
             )
             data = resp.json()
             if data.get("s") == "ok" and data.get("t"):
-                print(f"✓ KASE last trading day: {date_str}")
-                return date_str
-            check_date -= timedelta(days=1)
+                return d
+            check -= timedelta(days=1)
         return str(date.today() - timedelta(days=1))
 
-    # ── yfinance backfill (year by year up to last trading day) ───────────────
-    last_yfinance = find_last_trading_day_yfinance()
-    last_year = int(last_yfinance[:4])
+    # ── yfinance year-by-year ─────────────────────────────────────────────────
+    last_yf   = find_last_trading_day_yfinance()
+    last_year = int(last_yf[:4])
 
     for year in range(START_YEAR, last_year + 1):
-        chunk_start = f"{year}-01-01"
-        chunk_end = last_yfinance if year == last_year else f"{year}-12-31"
-
-        print(f"Fetching yfinance {chunk_start} → {chunk_end}...")
-        prices = fetch_prices(TICKERS, start=chunk_start, end=chunk_end)
-
+        start = f"{year}-01-01"
+        end   = last_yf if year == last_year else f"{year}-12-31"
+        prices = fetch_prices(TICKERS, start=start, end=end)
         if prices:
-            upload_to_gcs(prices, BUCKET, f"raw/prices/backfill/{year}.json")
+            upload_to_gcs(prices, bucket, f"raw/prices/backfill/{year}.json")
             log.append(f"✓ yfinance {year}: {len(prices)} rows")
         else:
             log.append(f"⚠ yfinance {year}: no data")
         print(log[-1])
 
-    # ── kase backfill (single call, all history) ──────────────────────────────
-    last_kase = find_last_trading_day_kase()
-
-    prices_kase = fetch_kase_prices(
-        tickers=KASE_TICKERS,
-        from_date="2000-01-01",
-        to_date=last_kase
+    # ── kase all-time ─────────────────────────────────────────────────────────
+    last_kase  = find_last_trading_day_kase()
+    kase_prices = fetch_kase_prices(
+        tickers=KASE_TICKERS, from_date="2000-01-01", to_date=last_kase
     )
-
-    if prices_kase:
-        upload_to_gcs(prices_kase, BUCKET, "raw/kase_prices/backfill/all.json")
-        log.append(f"✓ kase backfill: {len(prices_kase)} rows up to {last_kase}")
+    if kase_prices:
+        upload_to_gcs(kase_prices, bucket, "raw/kase_prices/backfill/all.json")
+        log.append(f"✓ kase backfill: {len(kase_prices)} rows up to {last_kase}")
     else:
         log.append("⚠ kase backfill: no data")
     print(log[-1])
 
-    # ── worldbank (unchanged) ─────────────────────────────────────────────────
-    print("Fetching World Bank historical data...")
-    all_data = fetch_all(COUNTRIES, INDICATORS)
-    flat = flatten_for_df(all_data)
-    upload_to_gcs(flat, BUCKET, "raw/worldbank/backfill/all.json")
-    log.append(f"✓ worldbank: {len(flat)} records")
+    # ── worldbank ─────────────────────────────────────────────────────────────
+    wb_data = fetch_all(COUNTRIES, INDICATORS)
+    upload_to_gcs(wb_data, bucket, "raw/worldbank/backfill/all.json")
+    log.append(f"✓ worldbank: {len(wb_data)} records")
+    print(log[-1])
 
     return "\n".join(log), 200
 
 
 @functions_framework.http
 def run_silver_backfill(request):
+    ok, failed = _run_scripts(SILVER_BACKFILL_SCRIPTS, str(date.today()))
+    return ("Silver backfill complete", 200) if ok else (f"FAILED: {failed}", 500)
+
+
+@functions_framework.http
+def run_gold_backfill(request):
+    from google.cloud import storage as gcs
+
+    today        = str(date.today())
+    silver_bucket = os.getenv("GCS_SILVER_BUCKET")
+    client       = gcs.Client()
+
+    def get_silver_dates(prefix: str) -> list:
+        dates = set()
+        for blob in client.bucket(silver_bucket).list_blobs(prefix=prefix):
+            parts = blob.name.split("run_date=")
+            if len(parts) > 1:
+                dates.add(parts[1].split("/")[0])
+        return sorted(dates)
+
+    # ── one-shot gold jobs ────────────────────────────────────────────────────
     for script in [
-        "transformation/silver_prices_backfill.py",
-        "transformation/silver_worldbank_backfill.py",
-        "transformation/silver_metadata_backfill.py",
-        "transformation/silver_news_backfill.py",
+        "transformation/gold_dim_date.py",
+        "transformation/gold_dim_country.py",
+        "transformation/gold_fact_macro.py",
     ]:
         print(f"Submitting {script}...")
-        result = submit_dataproc_job(script, str(date.today()))
-        if result != 0:
+        if submit_dataproc_job(script, today) != 0:
             return f"FAILED: {script}", 500
         print(f"✓ {script}")
-    return "Silver backfill complete", 200
+
+    # ── dim_company: per metadata date in order (SCD2) ────────────────────────
+    for run_date in get_silver_dates("metadata/"):
+        if submit_dataproc_job("transformation/gold_dim_company.py", run_date) != 0:
+            return f"FAILED: gold_dim_company {run_date}", 500
+        print(f"✓ gold_dim_company {run_date}")
+
+    # ── fact_prices and gold_news: wildcard mode ("ALL") ─────────────────────
+    for script in [
+        "transformation/gold_fact_prices.py",
+        "transformation/gold_news.py",
+    ]:
+        print(f"Submitting {script} ALL...")
+        if submit_dataproc_job(script, "ALL") != 0:
+            return f"FAILED: {script} ALL", 500
+        print(f"✓ {script} ALL")
+
+    return "Gold backfill complete", 200
+
+
+@functions_framework.http
+def full_backfill(request):
+    """End-to-end backfill: bronze → silver → gold in one call."""
+    print("=== FULL BACKFILL: Bronze ===")
+    result, status = backfill(request)
+    if status != 200:
+        return f"Bronze failed: {result}", 500
+
+    print("=== FULL BACKFILL: Silver ===")
+    result, status = run_silver_backfill(request)
+    if status != 200:
+        return f"Silver failed: {result}", 500
+
+    print("=== FULL BACKFILL: Gold ===")
+    result, status = run_gold_backfill(request)
+    if status != 200:
+        return f"Gold failed: {result}", 500
+
+    return "Full backfill complete: bronze → silver → gold", 200

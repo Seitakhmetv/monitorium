@@ -87,8 +87,11 @@ def fetch_kursiv() -> list:
     return list(all_articles.values())
 
 
+def fetch(run_date: str) -> list:
+    return fetch_kursiv()
+
+
 if __name__ == "__main__":
-    articles = fetch_kursiv()
-    # print(articles)
+    articles = fetch(RUN_DATE)
     upload_to_gcs(articles, BRONZE_BUCKET, f"raw/kursiv/{RUN_DATE}.json")
     print(f"Uploaded {len(articles)} Kursiv articles")

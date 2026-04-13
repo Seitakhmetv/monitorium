@@ -68,20 +68,14 @@ def fetch_kase_news(start_date: str, end_date: str) -> list:
 
     return articles
 
+def fetch(run_date: str) -> list:
+    buffer_start = (datetime.strptime(run_date, "%Y-%m-%d") - timedelta(days=3)).strftime("%Y-%m-%d")
+    articles = fetch_kase_news(start_date=buffer_start, end_date=run_date)
+    seen = {a["article_id"]: a for a in articles}
+    return list(seen.values())
+
+
 if __name__ == "__main__":
-    today = get_almaty_today()
-    buffer_start = (datetime.now(ALMATY_TZ) - timedelta(days=3)).strftime("%Y-%m-%d")
-
-    articles = fetch_kase_news(start_date=buffer_start, end_date=today)
-    # deduplicate
-    seen = {}
-    for a in articles:
-        seen[a["article_id"]] = a
-
-    # print(seen.values())
-    upload_to_gcs(
-        list(seen.values()),
-        BRONZE_BUCKET,
-        f"raw/kase_news/{RUN_DATE}.json"
-    )
-    print(f"Uploaded {len(seen)} KASE news articles")
+    articles = fetch(RUN_DATE)
+    upload_to_gcs(articles, BRONZE_BUCKET, f"raw/kase_news/{RUN_DATE}.json")
+    print(f"Uploaded {len(articles)} KASE news articles")
