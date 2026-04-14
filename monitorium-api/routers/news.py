@@ -38,6 +38,7 @@ def get_news(
         SELECT article_id, source, title, url, pub_date, companies, sectors, topics, impact, weight
         FROM {table('news_articles')}
         {where}
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY article_id ORDER BY pub_date DESC) = 1
         ORDER BY pub_date DESC
         LIMIT {min(limit, 200)}
     """

@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 from ingestion.utils import build_spark, write_gold
 
-load_dotenv(override=True)
+load_dotenv(dotenv_path=".env")
 
 PROJECT_ID    = os.getenv("GCP_PROJECT_ID")
 DATASET       = os.getenv("BQ_DATASET")
@@ -46,7 +46,29 @@ if __name__ == "__main__":
         spark.stop()
         exit(0)
 
-    mode = "overwrite" if RUN_DATE == "ALL" else "append"
-    write_gold(df, PROJECT_ID, DATASET, "news_articles", mode=mode)
-    print(f"news_articles written ({mode}): {df.count()} rows")
+    if RUN_DATE == "ALL":
+        write_gold(df, PROJECT_ID, DATASET, "news_articles", mode="overwrite")
+        print(f"news_articles written (overwrite ALL): {df.count()} rows")
+    else:
+        # Daily append: exclude article_ids already in the table to prevent duplicates
+        from google.cloud import bigquery as bq
+        client = bq.Client(project=PROJECT_ID)
+        existing_sql = f"""
+            SELECT DISTINCT article_id
+            FROM `{PROJECT_ID}.{DATASET}.news_articles`
+            WHERE DATE(pub_date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+        """
+        try:
+            existing_ids = {row.article_id for row in client.query(existing_sql).result()}
+            if existing_ids:
+                from pyspark.sql.functions import col
+                df = df.filter(~col("article_id").isin(existing_ids))
+        except Exception as e:
+            print(f"⚠ Could not load existing IDs (table may not exist yet): {e}")
+        count = df.count()
+        if count > 0:
+            write_gold(df, PROJECT_ID, DATASET, "news_articles", mode="append")
+            print(f"news_articles appended: {count} new rows")
+        else:
+            print("news_articles: no new rows to append")
     spark.stop()
