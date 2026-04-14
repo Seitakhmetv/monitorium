@@ -6,11 +6,7 @@ REGION=us-central1
 SA=monitorium-sa@monitorium-491507.iam.gserviceaccount.com
 LOG_FILE="deploy_functions.log"
 
-ENV_VARS="GCP_PROJECT_ID=monitorium-491507,\
-GCS_BRONZE_BUCKET=monitorium-bronze,\
-GCS_SILVER_BUCKET=monitorium-silver,\
-GCS_SCRIPTS_BUCKET=monitorium-scripts,\
-BQ_DATASET=monitorium_gold"
+ENV_VARS_FILE=".env.functions.yaml"
 
 deploy_function() {
     local NAME=$1
@@ -27,7 +23,7 @@ deploy_function() {
         --trigger-http \
         --timeout=$TIMEOUT \
         --memory=$MEMORY \
-        --set-env-vars $ENV_VARS \
+        --env-vars-file $ENV_VARS_FILE \
         --service-account=$SA \
         --project=$PROJECT || {
             echo "ERROR: Failed to deploy $NAME"
