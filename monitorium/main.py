@@ -56,7 +56,7 @@ def submit_dataproc_job(script: str, run_date: str, max_retries: int = 3) -> int
                 parent=f"projects/{project}/locations/{region}",
                 batch=batch,
             )
-            result = operation.result()
+            result = operation.result(timeout=3300)
             print(f"Batch job finished: {result.state}")
             return 0 if result.state == dataproc_v1.Batch.State.SUCCEEDED else 1
         except (ResourceExhausted, ServiceUnavailable) as e:
