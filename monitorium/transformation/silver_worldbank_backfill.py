@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from ingestion.utils import build_spark
 from transformation.silver_worldbank import clean_worldbank
 
-load_dotenv(override=True)
+load_dotenv(dotenv_path=".env")
 
 BRONZE_BUCKET = os.getenv("GCS_BRONZE_BUCKET")
 SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")

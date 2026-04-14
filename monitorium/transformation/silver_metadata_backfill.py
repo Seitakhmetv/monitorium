@@ -7,7 +7,7 @@ from ingestion.utils import build_spark
 from ingestion.config import KASE_TICKERS
 from transformation.silver_metadata import clean_metadata
 
-load_dotenv(override=True)
+load_dotenv(dotenv_path=".env")
 
 BRONZE_BUCKET = os.getenv("GCS_BRONZE_BUCKET")
 SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")

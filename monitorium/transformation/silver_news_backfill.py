@@ -8,7 +8,7 @@ from transformation.silver_news import (
     normalize, apply_tags, FINAL_COLS, SOURCES, _ensure_final_cols,
 )
 
-load_dotenv(override=True)
+load_dotenv(dotenv_path=".env")
 
 BRONZE_BUCKET = os.getenv("GCS_BRONZE_BUCKET")
 SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")

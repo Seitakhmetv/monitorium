@@ -5,7 +5,7 @@ from pyspark.sql import functions as F
 from ingestion.utils import build_spark
 from transformation.silver_prices import clean_prices
 
-load_dotenv(override=True)
+load_dotenv(dotenv_path=".env")
 
 BRONZE_BUCKET = os.getenv("GCS_BRONZE_BUCKET")
 SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")

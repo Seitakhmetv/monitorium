@@ -85,6 +85,7 @@ COMPANY_TAGS = {
     "kaspi": "KSPI", "каспи": "KSPI", "kaspi.kz": "KSPI", "kaspi bank": "KSPI",
     # KazMunayGas
     "казмунайгаз": "KMGZ", "kazmunaygas": "KMGZ", "kmg": "KMGZ", "казмунай": "KMGZ",
+    "kmgz": "KMGZ", "кмг": "KMGZ",
     # KazTransOil
     "казтрансойл": "KZTO", "kaztransoil": "KZTO", "kzt oil": "KZTO",
     # Kazakhtelecom
