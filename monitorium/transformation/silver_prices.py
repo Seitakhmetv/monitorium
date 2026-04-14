@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 from ingestion.utils import build_spark, write_silver
 
-load_dotenv(override=True)
+load_dotenv(dotenv_path=".env")
 
 BRONZE_BUCKET = os.getenv("GCS_BRONZE_BUCKET")
 SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")
