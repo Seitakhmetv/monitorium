@@ -14,7 +14,6 @@ export const TICKERS = {
     { symbol: 'KZTK',  name: 'Kazakhtelecom',      sector: 'Telecom' },
     { symbol: 'KEGC',  name: 'KEGOC',             sector: 'Energy' },
     { symbol: 'KCEL',  name: 'Kcell',             sector: 'Telecom' },
-    { symbol: 'BRBK',  name: 'Bereke Bank',        sector: 'Banking' },
   ],
   global: [
     { symbol: 'AAPL',    name: 'Apple',           sector: 'Tech' },
@@ -23,7 +22,7 @@ export const TICKERS = {
     { symbol: 'BZ=F',    name: 'Brent Crude',     sector: 'Commodity' },
     { symbol: 'GC=F',    name: 'Gold',            sector: 'Commodity' },
     { symbol: 'SI=F',    name: 'Silver',          sector: 'Commodity' },
-    { symbol: 'UX1!',    name: 'Uranium',         sector: 'Commodity' },
+    { symbol: 'URA',     name: 'Uranium ETF',     sector: 'Commodity' },
   ],
 } as const
 
