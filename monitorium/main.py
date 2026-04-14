@@ -16,8 +16,10 @@ from ingestion.utils import upload_to_gcs
 
 # ── shared ────────────────────────────────────────────────────────────────────
 
-def submit_dataproc_job(script: str, run_date: str) -> int:
+def submit_dataproc_job(script: str, run_date: str, max_retries: int = 3) -> int:
+    import time
     from google.cloud import dataproc_v1
+    from google.api_core.exceptions import ResourceExhausted, ServiceUnavailable, Aborted
 
     project = os.getenv("GCP_PROJECT_ID")
     region  = "us-central1"
@@ -37,7 +39,7 @@ def submit_dataproc_job(script: str, run_date: str) -> int:
         },
         "environment_config": {
             "execution_config": {
-                "service_account": f"monitorium-sa@{project}.iam.gserviceaccount.com"
+                "service_account": f"monitorium-sa@{project}.iam.gserviceaccount.com",
             }
         },
         "runtime_config": {
@@ -48,13 +50,26 @@ def submit_dataproc_job(script: str, run_date: str) -> int:
         },
     }
 
-    operation = batch_client.create_batch(
-        parent=f"projects/{project}/locations/{region}",
-        batch=batch,
-    )
-    result = operation.result()
-    print(f"Batch job finished: {result.state}")
-    return 0 if result.state == dataproc_v1.Batch.State.SUCCEEDED else 1
+    for attempt in range(1, max_retries + 1):
+        try:
+            operation = batch_client.create_batch(
+                parent=f"projects/{project}/locations/{region}",
+                batch=batch,
+            )
+            result = operation.result()
+            print(f"Batch job finished: {result.state}")
+            return 0 if result.state == dataproc_v1.Batch.State.SUCCEEDED else 1
+        except (ResourceExhausted, ServiceUnavailable) as e:
+            if attempt == max_retries:
+                print(f"Dataproc unavailable after {max_retries} attempts: {e}")
+                return 1
+            wait = 60 * attempt  # 60s, 120s
+            print(f"Dataproc unavailable (attempt {attempt}/{max_retries}), retrying in {wait}s: {e}")
+            time.sleep(wait)
+        except Aborted as e:
+            # 409 Aborted = job ran but failed (missing file, code error, etc.) — not retriable
+            print(f"Batch job failed: {e}")
+            return 1
 
 
 def _run_scripts(scripts: list, run_date: str) -> tuple[bool, str]:
@@ -83,8 +98,10 @@ def scraper_yfinance_run(request):
 
 @functions_framework.http
 def scraper_worldbank_run(request):
+    from ingestion.scraper_nbk import fetch as fetch_nbk
     run_date = str(date.today())
     data = fetch_all(COUNTRIES, INDICATORS)
+    data += fetch_nbk(run_date)
     upload_to_gcs(data, os.getenv("GCS_BRONZE_BUCKET"), f"raw/worldbank/{run_date}.json")
     return f"Uploaded {len(data)} worldbank records", 200
 
@@ -122,14 +139,14 @@ def scraper_kase_run(request):
 
 @functions_framework.http
 def run_silver(request):
-    run_date = str(date.today())
+    run_date = (request.get_json(silent=True) or {}).get("date") or str(date.today())
     ok, failed = _run_scripts(SILVER_SCRIPTS, run_date)
     return ("Silver complete", 200) if ok else (f"FAILED: {failed}", 500)
 
 
 @functions_framework.http
 def run_gold(request):
-    run_date = str(date.today())
+    run_date = (request.get_json(silent=True) or {}).get("date") or str(date.today())
     ok, failed = _run_scripts(GOLD_SCRIPTS, run_date)
     return ("Gold complete", 200) if ok else (f"FAILED: {failed}", 500)
 

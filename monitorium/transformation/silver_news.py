@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from ingestion.config import NEWS_SOURCES
 from ingestion.tagger import tag_article
 
-load_dotenv(override=True)
+load_dotenv(dotenv_path=".env")
 
 BRONZE_BUCKET = os.getenv("GCS_BRONZE_BUCKET")
 SILVER_BUCKET = os.getenv("GCS_SILVER_BUCKET")

@@ -72,6 +72,7 @@ upload_wheel() {
 
     echo "── Creating Dataproc .env and uploading..."
     sed 's/ENV=local/ENV=dataproc/' .env \
+        | sed 's/^DEV=.*/DEV=false/' \
         | grep -v '^RUN_DATE' \
         | grep -v '^GOOGLE_APPLICATION_CREDENTIALS' \
         > .env.dataproc

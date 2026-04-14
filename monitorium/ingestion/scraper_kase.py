@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from ingestion.utils import upload_to_gcs
 from ingestion.config import KASE_TICKERS
 
-load_dotenv()
+load_dotenv(dotenv_path=".env")
 
 BRONZE_BUCKET = os.getenv("GCS_BRONZE_BUCKET")
 RUN_DATE = os.getenv("RUN_DATE", str(date.today()))
