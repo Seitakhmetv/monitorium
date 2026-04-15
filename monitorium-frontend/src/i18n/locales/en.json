@@ -1,0 +1,70 @@
+{
+  "nav": {
+    "overview": "Markets",
+    "news": "News",
+    "macro": "Macro",
+    "watchlist": "Watchlist"
+  },
+  "overview": {
+    "title": "Kazakhstan Markets",
+    "subtitle": "Real-time financial intelligence",
+    "change": "Change",
+    "volume": "Volume",
+    "price": "Price",
+    "ticker": "Ticker",
+    "noData": "No data available"
+  },
+  "ticker": {
+    "latest": "Latest",
+    "open": "Open",
+    "high": "High",
+    "low": "Low",
+    "close": "Close",
+    "volume": "Volume",
+    "currency": "Currency",
+    "prevClose": "Prev. close",
+    "change": "Change",
+    "timeframe": {
+      "1M": "1M",
+      "3M": "3M",
+      "1Y": "1Y",
+      "ALL": "All"
+    },
+    "news": "Related news",
+    "macro": "Macro context",
+    "noNews": "No news found for this period",
+    "noPrices": "No price data available"
+  },
+  "news": {
+    "title": "News",
+    "filterTicker": "Filter by ticker",
+    "filterSource": "Source",
+    "filterTopic": "Topic",
+    "allSources": "All sources",
+    "allTopics": "All topics",
+    "impact": {
+      "positive": "Positive",
+      "negative": "Negative",
+      "neutral": "Neutral"
+    },
+    "noArticles": "No articles found"
+  },
+  "macro": {
+    "title": "Macro Indicators",
+    "selectCountry": "Select country",
+    "selectIndicator": "Indicator",
+    "gdp_growth": "GDP Growth",
+    "inflation_cpi": "Inflation (CPI)",
+    "unemployment": "Unemployment",
+    "interest_rate": "Interest Rate",
+    "noData": "No macro data available"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Retry",
+    "search": "Search ticker...",
+    "addWatchlist": "Add to watchlist",
+    "removeWatchlist": "Remove from watchlist"
+  }
+}

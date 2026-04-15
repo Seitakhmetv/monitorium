@@ -10,3 +10,4 @@ build/
 monitorium.egg-info/
 *.log
 CLAUDE.md
+.claude

@@ -1,0 +1,70 @@
+{
+  "nav": {
+    "overview": "Нарықтар",
+    "news": "Жаңалықтар",
+    "macro": "Макро",
+    "watchlist": "Таңдаулылар"
+  },
+  "overview": {
+    "title": "Қазақстан нарықтары",
+    "subtitle": "Нақты уақыттағы қаржылық талдау",
+    "change": "Өзгеріс",
+    "volume": "Көлем",
+    "price": "Баға",
+    "ticker": "Тикер",
+    "noData": "Деректер жоқ"
+  },
+  "ticker": {
+    "latest": "Соңғы",
+    "open": "Ашылу",
+    "high": "Жоғары",
+    "low": "Төмен",
+    "close": "Жабылу",
+    "volume": "Көлем",
+    "currency": "Валюта",
+    "prevClose": "Алд. жабылу",
+    "change": "Өзгеріс",
+    "timeframe": {
+      "1M": "1А",
+      "3M": "3А",
+      "1Y": "1Ж",
+      "ALL": "Барлығы"
+    },
+    "news": "Байланысты жаңалықтар",
+    "macro": "Макро контекст",
+    "noNews": "Жаңалықтар табылмады",
+    "noPrices": "Баға деректері жоқ"
+  },
+  "news": {
+    "title": "Жаңалықтар",
+    "filterTicker": "Тикер бойынша сүзу",
+    "filterSource": "Дереккөз",
+    "filterTopic": "Тақырып",
+    "allSources": "Барлық дереккөздер",
+    "allTopics": "Барлық тақырыптар",
+    "impact": {
+      "positive": "Оң",
+      "negative": "Теріс",
+      "neutral": "Бейтарап"
+    },
+    "noArticles": "Мақалалар табылмады"
+  },
+  "macro": {
+    "title": "Макро көрсеткіштер",
+    "selectCountry": "Ел таңдаңыз",
+    "selectIndicator": "Көрсеткіш",
+    "gdp_growth": "ЖІӨ өсімі",
+    "inflation_cpi": "Инфляция (ТБИ)",
+    "unemployment": "Жұмыссыздық",
+    "interest_rate": "Базалық мөлшерлеме",
+    "noData": "Деректер жоқ"
+  },
+  "common": {
+    "loading": "Жүктелуде...",
+    "error": "Қате орын алды",
+    "retry": "Қайталау",
+    "search": "Тикерді іздеу...",
+    "addWatchlist": "Таңдаулыларға қосу",
+    "removeWatchlist": "Таңдаулылардан алу"
+  }
+}

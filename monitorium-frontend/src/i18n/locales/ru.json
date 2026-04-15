@@ -1,0 +1,70 @@
+{
+  "nav": {
+    "overview": "Рынки",
+    "news": "Новости",
+    "macro": "Макро",
+    "watchlist": "Избранное"
+  },
+  "overview": {
+    "title": "Рынки Казахстана",
+    "subtitle": "Финансовая аналитика в реальном времени",
+    "change": "Изм.",
+    "volume": "Объём",
+    "price": "Цена",
+    "ticker": "Тикер",
+    "noData": "Нет данных"
+  },
+  "ticker": {
+    "latest": "Последнее",
+    "open": "Откр.",
+    "high": "Макс.",
+    "low": "Мин.",
+    "close": "Закр.",
+    "volume": "Объём",
+    "currency": "Валюта",
+    "prevClose": "Пред. закр.",
+    "change": "Изменение",
+    "timeframe": {
+      "1M": "1М",
+      "3M": "3М",
+      "1Y": "1Г",
+      "ALL": "Всё"
+    },
+    "news": "Связанные новости",
+    "macro": "Макро контекст",
+    "noNews": "Новостей не найдено",
+    "noPrices": "Нет ценовых данных"
+  },
+  "news": {
+    "title": "Новости",
+    "filterTicker": "Фильтр по тикеру",
+    "filterSource": "Источник",
+    "filterTopic": "Тема",
+    "allSources": "Все источники",
+    "allTopics": "Все темы",
+    "impact": {
+      "positive": "Позитивное",
+      "negative": "Негативное",
+      "neutral": "Нейтральное"
+    },
+    "noArticles": "Статьи не найдены"
+  },
+  "macro": {
+    "title": "Макро показатели",
+    "selectCountry": "Выбрать страну",
+    "selectIndicator": "Показатель",
+    "gdp_growth": "Рост ВВП",
+    "inflation_cpi": "Инфляция (ИПЦ)",
+    "unemployment": "Безработица",
+    "interest_rate": "Базовая ставка",
+    "noData": "Данных нет"
+  },
+  "common": {
+    "loading": "Загрузка...",
+    "error": "Что-то пошло не так",
+    "retry": "Повторить",
+    "search": "Поиск тикера...",
+    "addWatchlist": "В избранное",
+    "removeWatchlist": "Убрать из избранного"
+  }
+}
