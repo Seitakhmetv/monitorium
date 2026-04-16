@@ -95,9 +95,11 @@ COMPANY_TAGS = {
     "halyk": "HSBK", "народный банк": "HSBK", "halyk bank": "HSBK", "халык": "HSBK",
     # Kaspi
     "kaspi": "KSPI", "каспи": "KSPI", "kaspi.kz": "KSPI", "kaspi bank": "KSPI",
-    # KazMunayGas
+    # KazMunayGas (common shares)
     "казмунайгаз": "KMGZ", "kazmunaygas": "KMGZ", "kmg": "KMGZ", "казмунай": "KMGZ",
     "kmgz": "KMGZ", "кмг": "KMGZ",
+    # KazMunayGas (preferred shares)
+    "kmgd": "KMGD",
     # KazTransOil
     "казтрансойл": "KZTO", "kaztransoil": "KZTO", "kzt oil": "KZTO",
     # Kazakhtelecom
@@ -106,7 +108,7 @@ COMPANY_TAGS = {
     "kcell": "KCEL", "кселл": "KCEL",
     # CenterCredit
     "centercredit": "CCBN", "центркредит": "CCBN", "банк центркредит": "CCBN",
-    # ForteBank
+    # ForteBank (formerly Asian Bank)
     "fortebank": "ASBN", "форте банк": "ASBN", "forte bank": "ASBN",
     # Air Astana
     "air astana": "AIRA", "эйр астана": "AIRA", "air astana group": "AIRA",
@@ -116,6 +118,17 @@ COMPANY_TAGS = {
     "kazatomprom": "KZAP", "казатомпром": "KZAP", "uranium one": "KZAP",
     # Altynalmas
     "altynalmas": "ALMS", "алтыналмас": "ALMS",
+    # Aktobe Metal Structures Plant
+    "акзм": "AKZM", "металлоконструкций": "AKZM", "aktobe metal": "AKZM",
+    "aktobe zavod": "AKZM", "актюбинский завод": "AKZM",
+    # Rakhat (confectionery)
+    "рахат": "RAHT", "rakhat": "RAHT",
+    # Bastau
+    "bastau": "BAST", "бастау": "BAST", "bast holding": "BAST",
+    # IFDR
+    "ifdr": "IFDR",
+    # BSUL
+    "bsul": "BSUL",
     # Samruk-Kazyna (state holding — parent of KMG, KZTK, KEGC)
     "samruk": "SKZ", "самрук": "SKZ", "samruk-kazyna": "SKZ", "самрук-қазына": "SKZ",
     # Freedom Holding
@@ -124,6 +137,11 @@ COMPANY_TAGS = {
     "eurasian resources": "ERG", "eurasian resources group": "ERG", "евразийская группа": "ERG",
     # Banka RBK
     "rbk": "BRBK", "банк rbk": "BRBK",
+    # Commodity futures (tags articles about these instruments)
+    "brent": "BZ=F", "брент": "BZ=F", "brent crude": "BZ=F",
+    "copper": "HG=F", "медь": "HG=F", "copper futures": "HG=F",
+    "wheat": "ZW=F", "пшеница": "ZW=F", "wheat futures": "ZW=F",
+    "gold futures": "GC=F", "comex gold": "GC=F", "фьючерс на золото": "GC=F",
 }
 
 SECTOR_TAGS = {

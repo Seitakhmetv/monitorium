@@ -7,13 +7,23 @@
 // ── Tickers ──────────────────────────────────────────────────────────────────
 export const TICKERS = {
   kz: [
-    { symbol: 'KSPI',  name: 'Kaspi.kz',         sector: 'Fintech' },
-    { symbol: 'HSBK',  name: 'Halyk Bank',        sector: 'Banking' },
-    { symbol: 'KMGZ',  name: 'KazMunayGas',        sector: 'Oil & Gas' },
-    { symbol: 'KZAP',  name: 'Kazatomprom',        sector: 'Uranium' },
-    { symbol: 'KZTK',  name: 'Kazakhtelecom',      sector: 'Telecom' },
-    { symbol: 'KEGC',  name: 'KEGOC',             sector: 'Energy' },
-    { symbol: 'KCEL',  name: 'Kcell',             sector: 'Telecom' },
+    { symbol: 'KSPI',  name: 'Kaspi.kz',         sector: 'Fintech'   },
+    { symbol: 'HSBK',  name: 'Halyk Bank',        sector: 'Banking'   },
+    { symbol: 'KMGZ',  name: 'KazMunayGas',       sector: 'Oil & Gas' },
+    { symbol: 'KZAP',  name: 'Kazatomprom',        sector: 'Uranium'   },
+    { symbol: 'KZTK',  name: 'Kazakhtelecom',      sector: 'Telecom'   },
+    { symbol: 'KEGC',  name: 'KEGOC',              sector: 'Energy'    },
+    { symbol: 'KCEL',  name: 'Kcell',              sector: 'Telecom'   },
+    { symbol: 'KZTO',  name: 'KazTransOil',        sector: 'Oil & Gas' },
+    { symbol: 'AIRA',  name: 'Air Astana',         sector: 'Transport' },
+    { symbol: 'CCBN',  name: 'CenterCredit',       sector: 'Banking'   },
+    { symbol: 'ASBN',  name: 'ForteBank',          sector: 'Banking'   },
+    { symbol: 'AKZM',  name: 'Aktobe Metal',       sector: 'Industry'  },
+    { symbol: 'RAHT',  name: 'Rakhat',             sector: 'Food'      },
+    { symbol: 'BAST',  name: 'Bastau',             sector: 'Other'     },
+    { symbol: 'KMGD',  name: 'KMG Preferred',      sector: 'Oil & Gas' },
+    { symbol: 'IFDR',  name: 'IFDR',               sector: 'Finance'   },
+    { symbol: 'BSUL',  name: 'BSUL',               sector: 'Other'     },
   ],
   global: [
     { symbol: 'AAPL',    name: 'Apple',           sector: 'Tech' },
@@ -22,7 +32,10 @@ export const TICKERS = {
     { symbol: 'BZ=F',    name: 'Brent Crude',     sector: 'Commodity' },
     { symbol: 'GC=F',    name: 'Gold',            sector: 'Commodity' },
     { symbol: 'SI=F',    name: 'Silver',          sector: 'Commodity' },
-    { symbol: 'URA',     name: 'Uranium ETF',     sector: 'Commodity' },
+    { symbol: 'URA',      name: 'Uranium ETF', sector: 'Commodity' },
+    { symbol: 'HG=F',     name: 'Copper',      sector: 'Commodity' },
+    { symbol: 'ZW=F',     name: 'Wheat',       sector: 'Commodity' },
+    { symbol: 'USDKZT=X', name: 'USD/KZT',     sector: 'FX'        },
   ],
 } as const
 
@@ -32,6 +45,16 @@ export type TickerSymbol = (typeof TICKERS.kz | typeof TICKERS.global)[number]['
 export const ALL_TICKERS = [...TICKERS.kz, ...TICKERS.global]
 export const getTicker = (symbol: string) =>
   ALL_TICKERS.find(t => t.symbol === symbol.toUpperCase())
+
+// ── Commodity strip ───────────────────────────────────────────────────────────
+export const COMMODITY_STRIP = [
+  { symbol: 'BZ=F',     label: 'Brent',   icon: '🛢',  currency: 'USD'     },
+  { symbol: 'GC=F',     label: 'Gold',    icon: '🥇',  currency: 'USD'     },
+  { symbol: 'URA',      label: 'Uranium', icon: '⚡',  currency: 'USD'     },
+  { symbol: 'HG=F',     label: 'Copper',  icon: '🔩',  currency: 'USD'     },
+  { symbol: 'ZW=F',     label: 'Wheat',   icon: '🌾',  currency: 'USD'     },
+  { symbol: 'USDKZT=X', label: 'KZT',     icon: '💵',  currency: 'KZT/USD' },
+] as const
 
 // ── News sources ──────────────────────────────────────────────────────────────
 export const NEWS_SOURCES = [

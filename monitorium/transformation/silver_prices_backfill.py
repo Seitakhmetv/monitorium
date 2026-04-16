@@ -19,7 +19,7 @@ if __name__ == "__main__":
     df_us_clean = clean_prices(df_us, "USD")
 
     try:
-        df_kase = spark.read.json(f"gs://{BRONZE_BUCKET}/raw/kase_prices/backfill/all.json")
+        df_kase = spark.read.json(f"gs://{BRONZE_BUCKET}/raw/kase_prices/backfill/*.json")
         df_kase_clean = clean_prices(df_kase, "KZT")
         combined = df_us_clean.unionByName(df_kase_clean)
         print(f"KASE backfill rows: {df_kase_clean.count()}")

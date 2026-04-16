@@ -7,6 +7,7 @@ import { getLatestPrice } from '../../api/prices'
 import { useWatchlist } from '../../store/watchlist'
 import { ChangeBadge, Num, Card } from '../../components/ui'
 import { TICKERS } from '../../config'
+import TickerStrip from '../../components/TickerStrip'
 
 const KZ_TICKERS     = TICKERS.kz.map(t => t.symbol)
 const GLOBAL_TICKERS = TICKERS.global.map(t => t.symbol)
@@ -119,6 +120,10 @@ export default function OverviewPage() {
         >
           {t('overview.subtitle')}
         </motion.p>
+      </div>
+
+      <div className="my-4">
+        <TickerStrip />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
