@@ -8,6 +8,17 @@ load_dotenv(dotenv_path=".env")
 TICKERS = os.getenv("TICKERS", "AAPL,MSFT,JPM").split(",")
 KASE_TICKERS = os.getenv("KASE_TICKERS", "HSBK,KSPI,KCEL").split(",")
 
+TELEGRAM_CHANNELS = [
+    "FINANCEkaz",
+    "tengenomika",
+    "HalykFinance",
+    "jusan_analytics",
+    "monetarity",
+    "skybridgeinvest",
+    "FREEDOMFINANCEKAZAKHSTAN",
+    "KASE_official",
+]
+
 # ── World Bank ─────────────────────────────────────────────────────────────────
 
 WORLDBANK_COUNTRIES = {
@@ -50,6 +61,7 @@ NEWS_SOURCES = {
     "kursiv":    {"module": "ingestion.scraper_kursiv",    "gcs_prefix": "raw/kursiv"},
     "kase_news": {"module": "ingestion.scraper_kase_news", "gcs_prefix": "raw/kase_news"},
     "adilet":    {"module": "ingestion.scraper_adilet",    "gcs_prefix": "raw/adilet"},
+    "telegram":  {"module": "ingestion.scraper_telegram",  "gcs_prefix": "raw/telegram"},
 }
 
 # ── Pipeline script lists (used by main.py orchestration) ─────────────────────
