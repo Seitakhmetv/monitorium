@@ -1,0 +1,67 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [51.167, 43.652] },
+      "properties": {
+        "id": "aktau", "name": "Aktau Seaport",
+        "type": "seaport", "country": "KZ",
+        "capacity_tpa": 15000000,
+        "exports": ["oil", "grain", "metals"],
+        "operator": "KTZ Express / KMG",
+        "description": "Main Caspian export terminal for KZ oil and dry cargo",
+        "ticker": "KMGZ"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [52.083, 43.192] },
+      "properties": {
+        "id": "kuryk", "name": "Kuryk Port",
+        "type": "seaport", "country": "KZ",
+        "capacity_tpa": 20000000,
+        "exports": ["oil", "containers"],
+        "operator": "KTZ / Trans-Caspian International Transport Route",
+        "description": "New deep-water port, key node on Trans-Caspian corridor to Europe",
+        "ticker": "KZTO"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [82.270, 45.133] },
+      "properties": {
+        "id": "dostyk", "name": "Dostyk Border Crossing",
+        "type": "border_crossing", "country": "KZ",
+        "capacity_tpa": 20000000,
+        "exports": ["containers", "coal", "metals"],
+        "operator": "KTZ",
+        "description": "Main Kazakhstan-China rail border crossing (gauge change point)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [82.359, 44.853] },
+      "properties": {
+        "id": "altynkol", "name": "Altynkol Border Crossing",
+        "type": "border_crossing", "country": "KZ",
+        "capacity_tpa": 15000000,
+        "exports": ["containers", "grain"],
+        "operator": "KTZ",
+        "description": "Second KZ-China rail border crossing, opened 2012"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [69.598, 42.314] },
+      "properties": {
+        "id": "shymkent-dry", "name": "Shymkent Dry Port",
+        "type": "dry_port", "country": "KZ",
+        "capacity_tpa": 5000000,
+        "exports": ["containers", "grain"],
+        "operator": "KTZ",
+        "description": "Inland container terminal on the China-Europe rail corridor"
+      }
+    }
+  ]
+}

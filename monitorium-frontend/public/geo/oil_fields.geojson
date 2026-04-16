@@ -1,0 +1,71 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [53.612, 45.901] },
+      "properties": {
+        "id": "tengiz", "name": "Tengiz Field",
+        "company": "TengizChevroil (KMG 20%)", "ticker": "KMGZ",
+        "type": "oil", "status": "active",
+        "capacity_bpd": 700000, "region": "Atyrau",
+        "description": "Super-giant onshore oil field, one of the world's deepest"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [51.124, 45.416] },
+      "properties": {
+        "id": "kashagan", "name": "Kashagan Field",
+        "company": "NCOC (KMG 16.88%)", "ticker": "KMGZ",
+        "type": "oil", "status": "active",
+        "capacity_bpd": 400000, "region": "Atyrau (offshore)",
+        "description": "Largest oil field discovered in 30 years, offshore Caspian"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [57.014, 50.003] },
+      "properties": {
+        "id": "karachaganak", "name": "Karachaganak Field",
+        "company": "KPO (KMG 10%)", "ticker": "KMGZ",
+        "type": "oil_gas", "status": "active",
+        "capacity_bpd": 230000, "region": "West Kazakhstan",
+        "description": "Giant oil and gas condensate field"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [54.821, 48.103] },
+      "properties": {
+        "id": "uzen", "name": "Uzen Field",
+        "company": "KazMunayGas", "ticker": "KMGZ",
+        "type": "oil", "status": "active",
+        "capacity_bpd": 150000, "region": "Mangystau",
+        "description": "Major onshore field operated by KMG"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [55.802, 47.112] },
+      "properties": {
+        "id": "zhetybai", "name": "Zhetybai Field",
+        "company": "KazMunayGas", "ticker": "KMGZ",
+        "type": "oil", "status": "active",
+        "capacity_bpd": 80000, "region": "Mangystau",
+        "description": "Onshore oil field in Mangystau region"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [49.823, 47.516] },
+      "properties": {
+        "id": "aktobe", "name": "Aktobe Oil Fields",
+        "company": "CNPC (KMG JV)", "ticker": "KMGZ",
+        "type": "oil", "status": "active",
+        "capacity_bpd": 120000, "region": "Aktobe",
+        "description": "Group of fields in Aktobe region, CNPC-operated"
+      }
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { BarChart2, Newspaper, TrendingUp, Search } from 'lucide-react'
+import { BarChart2, Newspaper, TrendingUp, Search, Map } from 'lucide-react'
 import { useState } from 'react'
 import { useDebounce } from '../hooks/useDebounce'
 
@@ -25,6 +25,7 @@ export default function Layout() {
     { to: '/',      icon: BarChart2,   label: t('nav.overview') },
     { to: '/news',  icon: Newspaper,   label: t('nav.news') },
     { to: '/macro', icon: TrendingUp,  label: t('nav.macro') },
+    { to: '/map',   icon: Map,         label: t('nav.map') },
   ]
 
   return (

@@ -1,0 +1,115 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [63.698, 43.612] },
+      "properties": {
+        "id": "inkai", "name": "Inkai Mine",
+        "company": "Kazatomprom / Cameco JV", "ticker": "KZAP",
+        "mineral": "uranium", "status": "active",
+        "production_tpa": 4800, "region": "Turkestan"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [63.912, 43.285] },
+      "properties": {
+        "id": "budenovskoye2", "name": "Budenovskoye-2",
+        "company": "Kazatomprom", "ticker": "KZAP",
+        "mineral": "uranium", "status": "active",
+        "production_tpa": 3500, "region": "Turkestan"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [63.305, 44.128] },
+      "properties": {
+        "id": "khorasan1", "name": "Khorasan-1",
+        "company": "Kazatomprom", "ticker": "KZAP",
+        "mineral": "uranium", "status": "active",
+        "production_tpa": 3000, "region": "Turkestan"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [63.501, 44.311] },
+      "properties": {
+        "id": "zhalpak", "name": "Zhalpak",
+        "company": "Kazatomprom", "ticker": "KZAP",
+        "mineral": "uranium", "status": "active",
+        "production_tpa": 1200, "region": "Turkestan"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [64.183, 43.895] },
+      "properties": {
+        "id": "moinkum", "name": "Moinkum",
+        "company": "Kazatomprom / Orano JV", "ticker": "KZAP",
+        "mineral": "uranium", "status": "active",
+        "production_tpa": 2800, "region": "Turkestan"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [62.797, 43.298] },
+      "properties": {
+        "id": "akdala", "name": "Akdala",
+        "company": "Kazatomprom", "ticker": "KZAP",
+        "mineral": "uranium", "status": "active",
+        "production_tpa": 1000, "region": "Turkestan"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [79.011, 50.119] },
+      "properties": {
+        "id": "bakyrchik", "name": "Bakyrchik Gold Mine",
+        "company": "Altynalmas", "ticker": null,
+        "mineral": "gold", "status": "active",
+        "production_tpa": 8000, "region": "East Kazakhstan"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [69.283, 53.396] },
+      "properties": {
+        "id": "vasilkovskoye", "name": "Vasilkovskoye Gold Mine",
+        "company": "Glencore / Kazzinc", "ticker": null,
+        "mineral": "gold", "status": "active",
+        "production_tpa": 12000, "region": "North Kazakhstan"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [67.712, 47.786] },
+      "properties": {
+        "id": "zhezkazgan", "name": "Zhezkazgan Copper Mine",
+        "company": "Kazakhmys / ERG", "ticker": null,
+        "mineral": "copper", "status": "active",
+        "production_tpa": 300000, "region": "Karaganda"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [79.937, 46.838] },
+      "properties": {
+        "id": "aktogay", "name": "Aktogay Copper Mine",
+        "company": "Kazakhmys", "ticker": null,
+        "mineral": "copper", "status": "active",
+        "production_tpa": 170000, "region": "East Kazakhstan"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [72.098, 49.823] },
+      "properties": {
+        "id": "ekibastuz", "name": "Ekibastuz Coal Basin",
+        "company": "Samruk-Energo", "ticker": null,
+        "mineral": "coal", "status": "active",
+        "production_tpa": 80000000, "region": "Pavlodar"
+      }
+    }
+  ]
+}

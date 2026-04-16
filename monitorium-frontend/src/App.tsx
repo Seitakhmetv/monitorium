@@ -7,6 +7,7 @@ const OverviewPage = lazy(() => import('./features/overview/OverviewPage'))
 const TickerPage   = lazy(() => import('./features/ticker/TickerPage'))
 const NewsPage     = lazy(() => import('./features/news/NewsPage'))
 const MacroPage    = lazy(() => import('./features/macro/MacroPage'))
+const MapPage      = lazy(() => import('./features/map/MapPage'))
 
 function PageFallback() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="ticker/:ticker" element={<Suspense fallback={<PageFallback />}><TickerPage /></Suspense>} />
         <Route path="news" element={<Suspense fallback={<PageFallback />}><NewsPage /></Suspense>} />
         <Route path="macro" element={<Suspense fallback={<PageFallback />}><MacroPage /></Suspense>} />
+        <Route path="map"   element={<Suspense fallback={<PageFallback />}><MapPage   /></Suspense>} />
       </Route>
     </Routes>
   )

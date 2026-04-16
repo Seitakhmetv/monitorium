@@ -15,6 +15,9 @@
   --font-mono:       'JetBrains Mono', ui-monospace, monospace;
 }
 
+/* MapLibre dark theme — dim the base map to match --color-bg */
+.maplibregl-canvas { filter: brightness(0.55) saturate(0.5); }
+
 * { box-sizing: border-box; }
 
 html, body, #root {
