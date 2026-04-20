@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import prices, news, macro, companies, causality, geo
+from routers import prices, news, macro, companies, causality, geo, summary, fundamentals
 
 app = FastAPI(
     title="Monitorium API",
@@ -22,6 +22,8 @@ app.include_router(macro.router)
 app.include_router(companies.router)
 app.include_router(causality.router)
 app.include_router(geo.router)
+app.include_router(summary.router)
+app.include_router(fundamentals.router)
 
 
 @app.get("/")

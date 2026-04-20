@@ -1,0 +1,90 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [50.25, 43.10] },
+      "properties": {
+        "name": "MV Atyrau",
+        "imo": "9298012",
+        "flag": "KZ",
+        "type": "crude_tanker",
+        "cargo": "Crude oil (CPC Blend)",
+        "capacity_dwt": 12200,
+        "company": "KazMunayGas Shipping",
+        "ticker": "KMGZ",
+        "from": "Aktau",
+        "to": "Baku",
+        "route_note": "Aktau → Baku — connects to BTC pipeline to Ceyhan, Turkey"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [50.60, 44.35] },
+      "properties": {
+        "name": "MV Kazakhstan",
+        "imo": "9311447",
+        "flag": "KZ",
+        "type": "crude_tanker",
+        "cargo": "Ballast (returning empty)",
+        "capacity_dwt": 13500,
+        "company": "KazMunayGas Shipping",
+        "ticker": "KMGZ",
+        "from": "Baku",
+        "to": "Aktau",
+        "route_note": "Empty return voyage after crude delivery to Sangachal terminal"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [51.20, 45.40] },
+      "properties": {
+        "name": "Caspian Pioneer",
+        "imo": "9423018",
+        "flag": "MI",
+        "type": "shuttle_tanker",
+        "cargo": "Kashagan crude (stabilised)",
+        "capacity_dwt": 17600,
+        "company": "North Caspian Operating Company (NCOC)",
+        "ticker": "KMGZ",
+        "from": "Kashagan SBM",
+        "to": "Aktau Export Terminal",
+        "route_note": "Shuttle tanker: Kashagan offshore SBM → Aktau for pipeline injection into CPC system. KMG holds 16.88% stake in Kashagan."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [50.80, 41.85] },
+      "properties": {
+        "name": "MV Mangistau",
+        "imo": "9367821",
+        "flag": "KZ",
+        "type": "product_tanker",
+        "cargo": "LPG / condensate",
+        "capacity_dwt": 8400,
+        "company": "KazMunayGas Shipping",
+        "ticker": "KMGZ",
+        "from": "Aktau",
+        "to": "Neka (Iran)",
+        "route_note": "Karachaganak condensate export. Iran swap arrangement: condensate delivered to Neka, crude lifted at Persian Gulf."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [51.95, 43.20] },
+      "properties": {
+        "name": "Dostyk-1",
+        "imo": "8873301",
+        "flag": "KZ",
+        "type": "ro_ro",
+        "cargo": "Rail wagons (containerised goods, grain)",
+        "capacity_dwt": 5200,
+        "company": "Kazakhstan Caspian Transport System (KCTS)",
+        "ticker": "KMGZ",
+        "from": "Kuryk",
+        "to": "Baku (Alat Port)",
+        "route_note": "Trans-Caspian ferry link. Carries loaded rail wagons for the Middle Corridor (Baku–Tbilisi–Kars) to Europe."
+      }
+    }
+  ]
+}

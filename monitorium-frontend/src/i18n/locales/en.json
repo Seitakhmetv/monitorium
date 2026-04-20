@@ -4,7 +4,27 @@
     "news": "News",
     "macro": "Macro",
     "watchlist": "Watchlist",
-    "map": "Map"
+    "map": "Map",
+    "financials": "P&L"
+  },
+  "financials": {
+    "title": "P&L Analysis",
+    "subtitle": "IFRS income statements & key financials extracted from annual reports",
+    "sankey": "Income Flow",
+    "historical": "Historical Financials",
+    "selectYear": "Select a year to view income flow",
+    "noFlows": "No flow data available for this year",
+    "noData": "No financial data available yet",
+    "source": "Source: KASE annual reports via Gemini extraction",
+    "year": "Year",
+    "kpis": {
+      "revenue": "Revenue / NII",
+      "net_income": "Net Income",
+      "ebitda": "EBITDA",
+      "total_assets": "Total Assets",
+      "total_equity": "Equity",
+      "total_debt": "Total Debt"
+    }
   },
   "overview": {
     "title": "Kazakhstan Markets",
@@ -13,7 +33,10 @@
     "volume": "Volume",
     "price": "Price",
     "ticker": "Ticker",
-    "noData": "No data available"
+    "noData": "No data available",
+    "briefing": "Market Briefing",
+    "briefingUnavailable": "Briefing unavailable — set GEMINI_API_KEY on the API server.",
+    "latestNews": "Latest News"
   },
   "ticker": {
     "latest": "Latest",

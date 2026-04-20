@@ -12,4 +12,7 @@ def get(key: str, ttl: int) -> Any | None:
 
 
 def set(key: str, value: Any) -> None:
+    # Don't cache empty results — let next request retry BQ
+    if value is None or value == [] or value == {}:
+        return
     _store[key] = (value, time.time())

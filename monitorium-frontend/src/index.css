@@ -15,8 +15,23 @@
   --font-mono:       'JetBrains Mono', ui-monospace, monospace;
 }
 
-/* MapLibre dark theme — dim the base map to match --color-bg */
+/* Light theme */
+[data-theme="light"] {
+  --color-bg:        #f0f2f5;
+  --color-surface:   #ffffff;
+  --color-border:    #dde2ea;
+  --color-muted:     #8896a8;
+  --color-text:      #4a5568;
+  --color-heading:   #0f1923;
+  --color-accent:    #d97706;
+  --color-accent-dim:#fde68a;
+  --color-up:        #16a34a;
+  --color-down:      #dc2626;
+}
+
+/* MapLibre — dim in dark, natural in light */
 .maplibregl-canvas { filter: brightness(0.55) saturate(0.5); }
+[data-theme="light"] .maplibregl-canvas { filter: none; }
 
 * { box-sizing: border-box; }
 
@@ -30,6 +45,11 @@ body {
   color: var(--color-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+/* On large screens the grid provides the height constraint — remove the mobile cap */
+@media (min-width: 1024px) {
+  [data-lg-maxheight="none"] { max-height: none !important; }
 }
 
 /* Scrollbar */
